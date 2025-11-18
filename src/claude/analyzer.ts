@@ -66,39 +66,54 @@ ${issuesText}
 
 ## Your Task
 
-Analyze these issues and provide:
+Analyze these issues and provide analysis in this EXACT structure:
 
-1. **Executive Summary** - EXACTLY 3 bullet points, each must:
-   - Start with specific issue keys in brackets (e.g., [BPD-123, BPD-456])
-   - Be ONE concise sentence summarizing the insight
-   - Example: "[BPD-1143, BPD-1148] Apex MW trial (£100k) at risk due to output quality not delivering promised 40-50% time savings"
+## Executive Summary
+- [BPD-XXX, BPD-YYY] First insight with issue keys in brackets
+- [BPD-ZZZ] Second insight with issue keys in brackets
+- [BPD-AAA, BPD-BBB] Third insight with issue keys in brackets
 
-2. **Key Themes** - EXACTLY 3 themes, for each provide:
-   - Theme title
-   - What it represents (1-2 sentences)
-   - Why it matters (1-2 sentences)
-   - Reference relevant issue keys
+## Key Themes
+**Theme 1 Title**
+What it represents: 1-2 sentences with issue keys
+Why it matters: 1-2 sentences with revenue/customer impact
 
-3. **High Priority Items** - EXACTLY 3 items, for each include:
-   - The issue key (e.g., BPD-123)
-   - Why it's important (revenue impact, customer at risk, etc.)
-   - Recommended action (specific next steps)
+**Theme 2 Title**
+What it represents: 1-2 sentences with issue keys
+Why it matters: 1-2 sentences with revenue/customer impact
 
-4. **Recommendations** - EXACTLY 3 actionable items, each should:
-   - Be a specific action the team should take
-   - Include rationale or expected impact
-   - Reference relevant issue keys where applicable
+**Theme 3 Title**
+What it represents: 1-2 sentences with issue keys
+Why it matters: 1-2 sentences with revenue/customer impact
 
-## Format Guidelines
+## High Priority Items
+**BPD-XXX: Issue Title**
+Why it's important: Revenue/customer impact
+Recommended action: Specific next steps
 
-- ALL sections: MUST be exactly 3 items each
-- Be concise but specific
-- Always include issue keys when referencing specific items
-- Focus on actionable insights with revenue/customer impact
-- Maintain a professional, objective tone
-- Prioritize the most important items only
+**BPD-YYY: Issue Title**
+Why it's important: Revenue/customer impact
+Recommended action: Specific next steps
 
-Please provide your analysis now:`;
+**BPD-ZZZ: Issue Title**
+Why it's important: Revenue/customer impact
+Recommended action: Specific next steps
+
+## Recommendations
+1. Specific action with rationale [BPD-XXX]
+2. Specific action with rationale [BPD-YYY]
+3. Specific action with rationale [BPD-ZZZ]
+
+## CRITICAL RULES - DO NOT DEVIATE:
+- EXACTLY 3 bullets in Executive Summary
+- EXACTLY 3 themes in Key Themes
+- EXACTLY 3 items in High Priority Items
+- EXACTLY 3 items in Recommendations
+- NO MORE, NO LESS than 3 in each section
+- Every section MUST be present
+- Focus on the TOP 3 most critical items only
+
+Please provide your analysis now following this EXACT format:`;
   }
 
   /**
