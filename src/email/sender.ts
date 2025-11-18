@@ -90,24 +90,24 @@ export class EmailSender {
       color: #333;
       margin-top: 30px;
       margin-bottom: 15px;
-      border-left: 3px solid #333;
-      padding-left: 15px;
     }
     .metrics {
       display: flex;
-      gap: 20px;
       margin: 20px 0;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
     .metric-card {
-      background: #f5f5f5;
+      background: #ffffff;
       color: #333;
-      padding: 20px;
-      border: 1px solid #ddd;
+      padding: 20px 30px;
+      border: 2px solid #ddd;
       border-radius: 8px;
       flex: 1;
-      min-width: 150px;
       text-align: center;
+      margin-right: 20px;
+    }
+    .metric-card:last-child {
+      margin-right: 0;
     }
     .metric-value {
       font-size: 36px;
@@ -123,7 +123,6 @@ export class EmailSender {
       padding: 20px;
       border-radius: 8px;
       margin: 20px 0;
-      border-left: 3px solid #ddd;
     }
     ul {
       padding-left: 20px;
@@ -134,24 +133,21 @@ export class EmailSender {
     }
     .priority-item {
       background-color: #f9f9f9;
-      padding: 10px;
+      padding: 20px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 3px solid #ddd;
     }
     .theme-item {
       background-color: #f9f9f9;
-      padding: 10px;
+      padding: 20px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 3px solid #ddd;
     }
     .recommendation-item {
       background-color: #f9f9f9;
-      padding: 10px;
+      padding: 20px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 3px solid #ddd;
     }
     .footer {
       margin-top: 40px;
@@ -341,6 +337,9 @@ export class EmailSender {
     // Convert markdown bold (**text**) to HTML bold
     let formatted = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
+    // Remove any remaining asterisks (cleanup for malformed markdown)
+    formatted = formatted.replace(/\*/g, '');
+
     // Convert issue keys like ABC-123 to clickable links
     formatted = formatted.replace(/([A-Z]+-\d+)/g, (match) => {
       const url = `${this.jiraUrl}/browse/${match}`;
@@ -354,7 +353,24 @@ export class EmailSender {
    * Format summary text as bullet points
    */
   private formatSummaryAsBullets(summary: string): string {
-    // Split by lines and filter out empty lines
+    // First, try to split on bolded sections (each **Title**: becomes a new bullet)
+    // Split on pattern like " - **" which separates themes
+    const sections = summary.split(/\s*-\s*\*\*/).filter(s => s.trim().length > 0);
+
+    if (sections.length > 1) {
+      // We have multiple sections, format each as a bullet
+      const bullets = sections
+        .map(section => {
+          // Add back the ** at the start if it doesn't have it
+          const formatted = section.startsWith('**') ? section : '**' + section;
+          return `<li style="margin-bottom: 10px; line-height: 1.6;">${this.formatText(formatted)}</li>`;
+        })
+        .join('');
+
+      return `<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">${bullets}</ul>`;
+    }
+
+    // Fallback: Split by lines and filter out empty lines
     const lines = summary
       .split('\n')
       .map(line => line.trim())
