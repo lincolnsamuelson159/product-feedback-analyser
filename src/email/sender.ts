@@ -240,13 +240,13 @@ export class EmailSender {
             return `
           <tr style="background-color: ${bgColor}; border-bottom: 1px solid #dee2e6;">
             <td style="padding: 12px;">
-              ${issue.productArea || '—'}
+              ${this.formatProductAreaPill(issue.productArea)}
             </td>
             <td style="padding: 12px;">
               <span class="issue-key">${issue.key}</span> ${issue.summary}
             </td>
-            <td style="padding: 12px; color: #6c757d;">
-              ${issue.pageFeatureTheme || '—'}
+            <td style="padding: 12px;">
+              ${this.formatColoredPill(issue.pageFeatureTheme)}
             </td>
             <td style="padding: 12px; color: #6c757d; font-size: 13px;">
               ${new Date(issue.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -273,6 +273,55 @@ export class EmailSender {
 </body>
 </html>
     `.trim();
+  }
+
+  /**
+   * Generate a consistent color for a product area
+   */
+  private getProductAreaColor(productArea: string): { bg: string; text: string } {
+    // Predefined color palette for product areas
+    const colors = [
+      { bg: '#E3F2FD', text: '#1565C0' }, // Blue
+      { bg: '#F3E5F5', text: '#6A1B9A' }, // Purple
+      { bg: '#E8F5E9', text: '#2E7D32' }, // Green
+      { bg: '#FFF3E0', text: '#E65100' }, // Orange
+      { bg: '#FCE4EC', text: '#C2185B' }, // Pink
+      { bg: '#E0F2F1', text: '#00695C' }, // Teal
+      { bg: '#FFF9C4', text: '#F57F17' }, // Yellow
+      { bg: '#FFEBEE', text: '#C62828' }, // Red
+      { bg: '#E8EAF6', text: '#283593' }, // Indigo
+      { bg: '#F1F8E9', text: '#558B2F' }, // Light Green
+    ];
+
+    // Generate a consistent hash from the product area string
+    let hash = 0;
+    for (let i = 0; i < productArea.length; i++) {
+      hash = productArea.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Use the hash to select a color
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  }
+
+  /**
+   * Format any field as a colored pill (product area, page/feature/theme, etc.)
+   */
+  private formatColoredPill(value?: string): string {
+    if (!value) {
+      return '<span style="color: #999;">—</span>';
+    }
+
+    const color = this.getProductAreaColor(value);
+    return `<span style="display: inline-block; background-color: ${color.bg}; color: ${color.text}; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap;">${value}</span>`;
+  }
+
+  /**
+   * Format product area as a colored pill
+   * @deprecated Use formatColoredPill instead
+   */
+  private formatProductAreaPill(productArea?: string): string {
+    return this.formatColoredPill(productArea);
   }
 
   /**
