@@ -39,6 +39,7 @@ export class JiraClient {
 
       console.log(`Fetching issues with JQL: ${jql}`);
 
+      // Use POST /search/jql with explicit fields including custom fields
       const response = await this.client.post('/search/jql', {
         jql,
         maxResults: 100,
@@ -53,12 +54,46 @@ export class JiraClient {
           'priority',
           'issuetype',
           'labels',
-          'comment'
+          'comment',
+          'customfield_12060', // Product Area
+          'customfield_11829'  // Page/Feature/Theme
         ]
       });
 
-      console.log(`Found ${response.data.issues.length} issues`);
-      return response.data.issues;
+      console.log(`Found ${response.data.issues ? response.data.issues.length : 0} issues`);
+
+      // Debug: Log response structure
+      console.log('\n🔍 Response structure:', Object.keys(response.data));
+      if (response.data.issues && response.data.issues.length > 0) {
+        console.log('🔍 First issue structure:', Object.keys(response.data.issues[0]));
+      }
+
+      // The /search/jql endpoint might return issues directly in 'values' instead of 'issues'
+      const issues = response.data.issues || response.data.values || [];
+
+      // Log first issue's fields to help identify custom field IDs
+      if (issues && issues.length > 0) {
+        const firstIssue = issues[0];
+        console.log('🔍 First issue keys:', Object.keys(firstIssue));
+
+        if (firstIssue.fields) {
+          console.log('\n📋 Available custom fields in first issue:');
+          Object.keys(firstIssue.fields).forEach(fieldKey => {
+            const field = firstIssue.fields[fieldKey];
+            if (fieldKey.startsWith('customfield_') && field != null) {
+              // Log custom fields with their values
+              let value = field;
+              if (typeof field === 'object') {
+                value = field.value || field.name || JSON.stringify(field).substring(0, 80);
+              }
+              console.log(`  ${fieldKey}: ${value}`);
+            }
+          });
+          console.log('');
+        }
+      }
+
+      return issues;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error('Jira API Error:', error.response?.data || error.message);
@@ -84,8 +119,33 @@ export class JiraClient {
       priority: issue.fields.priority?.name || 'None',
       issueType: issue.fields.issuetype.name,
       labels: issue.fields.labels || [],
-      recentComments: this.extractRecentComments(issue)
+      recentComments: this.extractRecentComments(issue),
+      productArea: this.extractCustomFieldValue(issue.fields.customfield_12060),
+      pageFeatureTheme: this.extractCustomFieldValue(issue.fields.customfield_11829)
     }));
+  }
+
+  /**
+   * Extract value from custom field (handles arrays and objects)
+   */
+  private extractCustomFieldValue(field: any): string | undefined {
+    if (!field) return undefined;
+
+    // Handle array of objects with 'value' property
+    if (Array.isArray(field)) {
+      return field
+        .map(item => item.value || item.name || item)
+        .filter(Boolean)
+        .join(', ') || undefined;
+    }
+
+    // Handle single object with 'value' property
+    if (typeof field === 'object') {
+      return field.value || field.name || undefined;
+    }
+
+    // Handle plain string
+    return field.toString();
   }
 
   /**

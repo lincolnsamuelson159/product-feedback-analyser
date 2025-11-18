@@ -75,6 +75,10 @@ export interface JiraIssue {
         created: string;
       }>;
     };
+    // Custom fields - these may have different field IDs in your Jira instance
+    customfield_10037?: any; // Product Area (example field ID)
+    customfield_10038?: any; // Page/Feature/Theme (example field ID)
+    [key: string]: any; // Allow any custom fields
   };
 }
 
@@ -94,6 +98,8 @@ export interface SimplifiedIssue {
   issueType: string;
   labels: string[];
   recentComments: string[];
+  productArea?: string;
+  pageFeatureTheme?: string;
 }
 
 /**
@@ -110,6 +116,8 @@ export interface AnalysisResult {
     updatedIssues: number;
     commonLabels: string[];
   };
+  groupedByProductArea?: Record<string, SimplifiedIssue[]>;
+  groupedByPageFeatureTheme?: Record<string, SimplifiedIssue[]>;
 }
 
 /**

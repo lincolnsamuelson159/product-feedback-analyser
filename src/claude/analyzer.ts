@@ -68,27 +68,35 @@ ${issuesText}
 
 Analyze these issues and provide:
 
-1. **Executive Summary** (2-3 sentences): High-level overview of the feedback landscape
+1. **Executive Summary** - EXACTLY 3 bullet points, each must:
+   - Start with specific issue keys in brackets (e.g., [BPD-123, BPD-456])
+   - Be ONE concise sentence summarizing the insight
+   - Example: "[BPD-1143, BPD-1148] Apex MW trial (£100k) at risk due to output quality not delivering promised 40-50% time savings"
 
-2. **Key Themes** (3-5 themes): Identify and describe the main patterns, topics, or categories that emerge from the feedback. For each theme, explain what it represents and why it matters.
+2. **Key Themes** - EXACTLY 3 themes, for each provide:
+   - Theme title
+   - What it represents (1-2 sentences)
+   - Why it matters (1-2 sentences)
+   - Reference relevant issue keys
 
-3. **High Priority Items** (3-5 items): Highlight specific issues that need immediate attention. For each item, include:
-   - The issue key (e.g., ABC-123)
-   - Why it's important
-   - Recommended action
+3. **High Priority Items** - EXACTLY 3 items, for each include:
+   - The issue key (e.g., BPD-123)
+   - Why it's important (revenue impact, customer at risk, etc.)
+   - Recommended action (specific next steps)
 
-4. **Emerging Trends**: Any patterns in the data that suggest growing concerns or opportunities
-
-5. **Recommendations** (3-5 actionable items): Specific actions the team should take based on this feedback
+4. **Recommendations** - EXACTLY 3 actionable items, each should:
+   - Be a specific action the team should take
+   - Include rationale or expected impact
+   - Reference relevant issue keys where applicable
 
 ## Format Guidelines
 
+- ALL sections: MUST be exactly 3 items each
 - Be concise but specific
-- Use bullet points for easy scanning
-- Include issue keys when referencing specific items
-- Focus on actionable insights
+- Always include issue keys when referencing specific items
+- Focus on actionable insights with revenue/customer impact
 - Maintain a professional, objective tone
-- Highlight both problems AND opportunities
+- Prioritize the most important items only
 
 Please provide your analysis now:`;
   }

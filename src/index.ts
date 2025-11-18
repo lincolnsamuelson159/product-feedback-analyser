@@ -2,10 +2,32 @@ import dotenv from 'dotenv';
 import { JiraClient } from './jira/client';
 import { ClaudeAnalyzer } from './claude/analyzer';
 import { EmailSender } from './email/sender';
-import { Config } from './types';
+import { Config, SimplifiedIssue } from './types';
 
 // Load environment variables
 dotenv.config();
+
+/**
+ * Group issues by a specific field
+ */
+function groupIssuesByField(
+  issues: SimplifiedIssue[],
+  fieldName: keyof SimplifiedIssue
+): Record<string, SimplifiedIssue[]> {
+  const grouped: Record<string, SimplifiedIssue[]> = {};
+
+  issues.forEach(issue => {
+    const fieldValue = issue[fieldName];
+    const key = fieldValue && typeof fieldValue === 'string' ? fieldValue : 'Uncategorized';
+
+    if (!grouped[key]) {
+      grouped[key] = [];
+    }
+    grouped[key].push(issue);
+  });
+
+  return grouped;
+}
 
 /**
  * Load configuration from environment variables
@@ -102,6 +124,12 @@ async function main() {
     const analysis = await claudeAnalyzer.analyzeIssues(simplifiedIssues);
     console.log('✅ Analysis complete\n');
 
+    // Group issues by Product Area and Page/Feature/Theme
+    console.log('📊 Grouping issues by categories...');
+    analysis.groupedByProductArea = groupIssuesByField(simplifiedIssues, 'productArea');
+    analysis.groupedByPageFeatureTheme = groupIssuesByField(simplifiedIssues, 'pageFeatureTheme');
+    console.log('✅ Issues grouped\n');
+
     // Display summary to console
     console.log('📊 Analysis Summary:');
     console.log('─'.repeat(50));
@@ -114,7 +142,7 @@ async function main() {
 
     // Send email report
     console.log('📧 Sending email report...');
-    await emailSender.sendReport(analysis);
+    await emailSender.sendReport(analysis, simplifiedIssues);
     console.log('✅ Email sent successfully\n');
 
     console.log('🎉 Product Feedback Analysis completed successfully!');

@@ -1,5 +1,5 @@
 import sgMail from '@sendgrid/mail';
-import { EmailConfig, AnalysisResult } from '../types';
+import { EmailConfig, AnalysisResult, SimplifiedIssue } from '../types';
 
 /**
  * Email sender for product feedback reports
@@ -15,9 +15,9 @@ export class EmailSender {
   /**
    * Send product feedback report
    */
-  async sendReport(analysis: AnalysisResult): Promise<void> {
+  async sendReport(analysis: AnalysisResult, issues?: SimplifiedIssue[]): Promise<void> {
     const subject = this.generateSubject(analysis);
-    const htmlContent = this.generateHtmlReport(analysis);
+    const htmlContent = this.generateHtmlReport(analysis, issues);
     const textContent = this.generateTextReport(analysis);
 
     try {
@@ -52,7 +52,7 @@ export class EmailSender {
   /**
    * Generate HTML email content
    */
-  private generateHtmlReport(analysis: AnalysisResult): string {
+  private generateHtmlReport(analysis: AnalysisResult, issues?: SimplifiedIssue[]): string {
     const { metrics } = analysis;
 
     return `
@@ -202,7 +202,7 @@ export class EmailSender {
 
     <h2>Executive Summary</h2>
     <div class="summary">
-      ${analysis.summary}
+      ${this.formatSummaryAsBullets(analysis.summary)}
     </div>
 
     ${analysis.keyThemes.length > 0 ? `
@@ -224,6 +224,43 @@ export class EmailSender {
     ${analysis.recommendations.map(rec => `
       <div class="recommendation-item">${this.formatText(rec)}</div>
     `).join('')}
+    ` : ''}
+
+    ${issues && issues.length > 0 ? `
+    <h2>📋 All Ideas</h2>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+      <thead>
+        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+          <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057; width: 15%;">Product Area</th>
+          <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057; width: 45%;">Summary</th>
+          <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057; width: 20%;">Page/Feature/Theme</th>
+          <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057; width: 20%;">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${issues
+          .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
+          .map((issue, index) => {
+            const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+            const productAreaColor = this.getProductAreaColor(issue.productArea);
+            return `
+          <tr style="background-color: ${bgColor}; border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 12px;">
+              ${issue.productArea ? `<span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; background-color: ${productAreaColor}; color: white;">${issue.productArea}</span>` : '<span style="color: #adb5bd;">—</span>'}
+            </td>
+            <td style="padding: 12px;">
+              <span class="issue-key">${issue.key}</span> ${issue.summary}
+            </td>
+            <td style="padding: 12px; color: #6c757d;">
+              ${issue.pageFeatureTheme || '—'}
+            </td>
+            <td style="padding: 12px; color: #6c757d; font-size: 13px;">
+              ${new Date(issue.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </td>
+          </tr>
+        `}).join('')}
+      </tbody>
+    </table>
     ` : ''}
 
     ${metrics.commonLabels.length > 0 ? `
@@ -250,6 +287,61 @@ export class EmailSender {
   private formatText(text: string): string {
     // Highlight issue keys like ABC-123
     return text.replace(/([A-Z]+-\d+)/g, '<span class="issue-key">$1</span>');
+  }
+
+  /**
+   * Format summary text as bullet points
+   */
+  private formatSummaryAsBullets(summary: string): string {
+    // Split by lines and filter out empty lines
+    const lines = summary
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    // If it already looks like bullets (starts with -, *, or numbers), format as list
+    if (lines.some(line => /^[-*•]\s/.test(line) || /^\d+\.\s/.test(line))) {
+      const bullets = lines
+        .filter(line => /^[-*•]\s/.test(line) || /^\d+\.\s/.test(line))
+        .map(line => line.replace(/^[-*•]\s/, '').replace(/^\d+\.\s/, ''))
+        .map(line => `<li style="margin-bottom: 10px; line-height: 1.6;">${this.formatText(line)}</li>`)
+        .join('');
+
+      return `<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">${bullets}</ul>`;
+    }
+
+    // Otherwise just format with highlighting
+    return this.formatText(summary);
+  }
+
+  /**
+   * Get color for product area badge
+   */
+  private getProductAreaColor(productArea?: string): string {
+    if (!productArea) return '#6c757d';
+
+    const colors: Record<string, string> = {
+      'Lucia': '#f0ad4e', // Orange/yellow
+      'Portal': '#5bc0de', // Blue
+      'Boardiq': '#5cb85c', // Green
+      'Admin': '#d9534f', // Red
+      'API': '#777', // Gray
+      'Mobile': '#9b59b6', // Purple
+      'Integration': '#e67e22', // Dark orange
+    };
+
+    // Return predefined color or generate a consistent color from the name
+    if (colors[productArea]) {
+      return colors[productArea];
+    }
+
+    // Generate color from string
+    let hash = 0;
+    for (let i = 0; i < productArea.length; i++) {
+      hash = productArea.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash % 360);
+    return `hsl(${hue}, 60%, 50%)`;
   }
 
   /**
