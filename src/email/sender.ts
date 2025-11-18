@@ -213,21 +213,21 @@ export class EmailSender {
     ` : ''}
 
     ${analysis.highPriorityItems.length > 0 ? `
-    <h2>⚠️ High Priority Items</h2>
+    <h2>High Priority Items</h2>
     ${analysis.highPriorityItems.map(item => `
       <div class="priority-item">${this.formatText(item)}</div>
     `).join('')}
     ` : ''}
 
     ${analysis.recommendations.length > 0 ? `
-    <h2>💡 Recommendations</h2>
+    <h2>Recommendations</h2>
     ${analysis.recommendations.map(rec => `
       <div class="recommendation-item">${this.formatText(rec)}</div>
     `).join('')}
     ` : ''}
 
     ${issues && issues.length > 0 ? `
-    <h2>📋 All Ideas</h2>
+    <h2>All Ideas</h2>
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
       <thead>
         <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
@@ -242,11 +242,10 @@ export class EmailSender {
           .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
           .map((issue, index) => {
             const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
-            const productAreaColor = this.getProductAreaColor(issue.productArea);
             return `
           <tr style="background-color: ${bgColor}; border-bottom: 1px solid #dee2e6;">
             <td style="padding: 12px;">
-              ${issue.productArea ? `<span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; background-color: ${productAreaColor}; color: white;">${issue.productArea}</span>` : '<span style="color: #adb5bd;">—</span>'}
+              ${issue.productArea || '—'}
             </td>
             <td style="padding: 12px;">
               <span class="issue-key">${issue.key}</span> ${issue.summary}
@@ -312,35 +311,6 @@ export class EmailSender {
 
     // Otherwise just format with highlighting
     return this.formatText(summary);
-  }
-
-  /**
-   * Get color for product area badge
-   */
-  private getProductAreaColor(productArea?: string): string {
-    if (!productArea) return '#6c757d';
-
-    const colors: Record<string, string> = {
-      'Portal': '#5bc0de', // Blue
-      'Minute Writer': '#9b59b6', // Purple
-      'Report Writer': '#e67e22', // Orange
-      'Actions': '#5cb85c', // Green
-      'Other': '#6c757d', // Gray
-      'Uncategorized': '#95a5a6', // Light gray
-    };
-
-    // Return predefined color or generate a consistent color from the name
-    if (colors[productArea]) {
-      return colors[productArea];
-    }
-
-    // Generate color from string for any other areas
-    let hash = 0;
-    for (let i = 0; i < productArea.length; i++) {
-      hash = productArea.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash % 360);
-    return `hsl(${hue}, 60%, 50%)`;
   }
 
   /**
