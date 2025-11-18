@@ -79,16 +79,16 @@ export class EmailSender {
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     h1 {
-      color: #2c3e50;
-      border-bottom: 3px solid #3498db;
+      color: #333;
+      border-bottom: 2px solid #333;
       padding-bottom: 10px;
       margin-bottom: 20px;
     }
     h2 {
-      color: #2980b9;
+      color: #333;
       margin-top: 30px;
       margin-bottom: 15px;
-      border-left: 4px solid #3498db;
+      border-left: 3px solid #333;
       padding-left: 15px;
     }
     .metrics {
@@ -98,9 +98,10 @@ export class EmailSender {
       flex-wrap: wrap;
     }
     .metric-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: #f5f5f5;
+      color: #333;
       padding: 20px;
+      border: 1px solid #ddd;
       border-radius: 8px;
       flex: 1;
       min-width: 150px;
@@ -116,11 +117,11 @@ export class EmailSender {
       opacity: 0.9;
     }
     .summary {
-      background-color: #ecf0f1;
+      background-color: #f9f9f9;
       padding: 20px;
       border-radius: 8px;
       margin: 20px 0;
-      border-left: 4px solid #3498db;
+      border-left: 3px solid #ddd;
     }
     ul {
       padding-left: 20px;
@@ -130,25 +131,25 @@ export class EmailSender {
       line-height: 1.5;
     }
     .priority-item {
-      background-color: #fff3cd;
+      background-color: #f9f9f9;
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 4px solid #ffc107;
+      border-left: 3px solid #ddd;
     }
     .theme-item {
-      background-color: #d1ecf1;
+      background-color: #f9f9f9;
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 4px solid #17a2b8;
+      border-left: 3px solid #ddd;
     }
     .recommendation-item {
-      background-color: #d4edda;
+      background-color: #f9f9f9;
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 10px;
-      border-left: 4px solid #28a745;
+      border-left: 3px solid #ddd;
     }
     .footer {
       margin-top: 40px;
@@ -173,8 +174,9 @@ export class EmailSender {
       margin-top: 15px;
     }
     .label {
-      background-color: #6c757d;
-      color: white;
+      background-color: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
       padding: 4px 12px;
       border-radius: 12px;
       font-size: 12px;
@@ -183,7 +185,7 @@ export class EmailSender {
 </head>
 <body>
   <div class="container">
-    <h1>📊 Product Feedback Summary</h1>
+    <h1>Product Feedback Summary</h1>
 
     <div class="metrics">
       <div class="metric-card">
