@@ -81,13 +81,13 @@ export class ClaudeAnalyzer {
       : '';
 
     const themesInstruction = allIssuesText
-      ? `\n## ALL Product Feedback Issues (for Key Themes analysis)
+      ? `\n## ALL Product Feedback Issues (for Executive Summary context)
 
 ${allIssuesText}
 
-**Important for Key Themes**: Use the ALL issues above to identify overarching themes. Reference the last run date and use comparative language like:
-- "Key themes continue to be..." (if same themes persist)
-- "New themes have emerged since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if new themes)
+**Important for Executive Summary**: Use the ALL issues above to identify overarching themes. Reference the last run date and use comparative language like:
+- "Theme continues to be..." (if same themes persist)
+- "Theme has emerged since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if new themes)
 - "No significant new themes since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if no new themes)
 `
       : '';
@@ -103,24 +103,19 @@ ${themesInstruction}
 Analyze these issues and provide analysis in this EXACT structure:
 
 ## Executive Summary
-Focus on NEW issues only. Summarize the most important NEW feedback since last run.
-- [BPD-XXX, BPD-YYY] First insight with issue keys in brackets
-- [BPD-ZZZ] Second insight with issue keys in brackets
-- [BPD-AAA, BPD-BBB] Third insight with issue keys in brackets
+${allIssuesText ? 'Analyze ALL issues (both new and historical) to identify the 3 highest-level strategic themes. Use comparative language if there is history.' : 'Analyze the issues to identify key strategic themes.'}
 
-## Key Themes
-${allIssuesText ? 'Analyze ALL issues (both new and historical) to identify overarching themes. Use comparative language referencing the last run date.' : 'Analyze the issues to identify key themes.'}
-**Theme 1 Title**
-What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
-Why it matters: 1-2 sentences with revenue/customer impact
+Each bullet must:
+1. Start with a HIGH-LEVEL THEME (not a specific ticket)
+2. Explain the theme in 1-2 sentences
+3. Reference supporting tickets in brackets at the end
 
-**Theme 2 Title**
-What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
-Why it matters: 1-2 sentences with revenue/customer impact
+Format:
+- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY, BPD-ZZZ]
+- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY]
+- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY, BPD-ZZZ]
 
-**Theme 3 Title**
-What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
-Why it matters: 1-2 sentences with revenue/customer impact
+CRITICAL: Do NOT start bullets with ticket numbers. Start with the theme name.
 
 ## High Priority Items
 Focus on NEW issues only. What needs immediate attention from the NEW feedback?
@@ -143,8 +138,8 @@ Focus on NEW issues only. What should we do based on NEW feedback?
 3. Specific action with rationale [BPD-ZZZ]
 
 ## CRITICAL RULES - DO NOT DEVIATE:
-- EXACTLY 3 bullets in Executive Summary (NEW issues only)
-- EXACTLY 3 themes in Key Themes (${allIssuesText ? 'ALL issues with comparative language' : 'from provided issues'})
+- EXACTLY 3 bullets in Executive Summary (${allIssuesText ? 'high-level themes from ALL issues' : 'from provided issues'})
+- Executive Summary bullets MUST start with **Theme Name**, NOT with [BPD-XXX]
 - EXACTLY 3 items in High Priority Items (NEW issues only)
 - EXACTLY 3 items in Recommendations (NEW issues only)
 - NO MORE, NO LESS than 3 in each section
@@ -194,7 +189,6 @@ Please provide your analysis now following this EXACT format:`;
     const lines = text.split('\n');
     const result: AnalysisResult = {
       summary: '',
-      keyThemes: [],
       highPriorityItems: [],
       recommendations: [],
       metrics
@@ -210,9 +204,6 @@ Please provide your analysis now following this EXACT format:`;
           trimmed.toLowerCase().includes('overview')) {
         currentSection = 'summary';
         continue;
-      } else if (trimmed.toLowerCase().includes('key theme')) {
-        currentSection = 'themes';
-        continue;
       } else if (trimmed.toLowerCase().includes('high priority') ||
                  trimmed.toLowerCase().includes('immediate attention')) {
         currentSection = 'priority';
@@ -227,8 +218,6 @@ Please provide your analysis now following this EXACT format:`;
 
       if (currentSection === 'summary' && trimmed.length > 0) {
         result.summary += trimmed + ' ';
-      } else if (currentSection === 'themes' && (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed))) {
-        result.keyThemes.push(trimmed.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, ''));
       } else if (currentSection === 'priority' && (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed))) {
         result.highPriorityItems.push(trimmed.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, ''));
       } else if (currentSection === 'recommendations' && (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed))) {
@@ -287,7 +276,6 @@ Please provide your analysis now following this EXACT format:`;
   private getEmptyAnalysis(): AnalysisResult {
     return {
       summary: 'No product feedback issues found in the specified time period.',
-      keyThemes: [],
       highPriorityItems: [],
       recommendations: ['Continue monitoring for new feedback'],
       metrics: {

@@ -207,13 +207,6 @@ export class EmailSender {
       ${this.formatSummaryAsBullets(analysis.summary)}
     </div>
 
-    ${analysis.keyThemes.length > 0 ? `
-    <h2>Key Themes</h2>
-    ${analysis.keyThemes.map(theme => `
-      <div class="theme-item">${this.formatText(theme)}</div>
-    `).join('')}
-    ` : ''}
-
     ${analysis.highPriorityItems.length > 0 ? `
     <h2>High Priority Items</h2>
     ${analysis.highPriorityItems.map(item => `
@@ -331,14 +324,6 @@ export class EmailSender {
 
     text += 'EXECUTIVE SUMMARY\n';
     text += analysis.summary + '\n\n';
-
-    if (analysis.keyThemes.length > 0) {
-      text += 'KEY THEMES\n';
-      analysis.keyThemes.forEach((theme, i) => {
-        text += `${i + 1}. ${theme}\n`;
-      });
-      text += '\n';
-    }
 
     if (analysis.highPriorityItems.length > 0) {
       text += 'HIGH PRIORITY ITEMS\n';

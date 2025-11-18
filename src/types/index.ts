@@ -107,7 +107,6 @@ export interface SimplifiedIssue {
  */
 export interface AnalysisResult {
   summary: string;
-  keyThemes: string[];
   highPriorityItems: string[];
   recommendations: string[];
   metrics: {
