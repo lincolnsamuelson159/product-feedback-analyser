@@ -32,6 +32,7 @@ export interface EmailConfig {
   apiKey: string;
   from: string;
   to: string;
+  jiraUrl: string;
 }
 
 /**

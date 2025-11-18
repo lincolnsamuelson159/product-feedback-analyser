@@ -6,9 +6,11 @@ import { EmailConfig, AnalysisResult, SimplifiedIssue } from '../types';
  */
 export class EmailSender {
   private config: EmailConfig;
+  private jiraUrl: string;
 
   constructor(config: EmailConfig) {
     this.config = config;
+    this.jiraUrl = config.jiraUrl;
     sgMail.setApiKey(config.apiKey);
   }
 
@@ -209,16 +211,24 @@ export class EmailSender {
 
     ${analysis.highPriorityItems.length > 0 ? `
     <h2>High Priority Items</h2>
-    ${analysis.highPriorityItems.map(item => `
-      <div class="priority-item">${this.formatText(item)}</div>
-    `).join('')}
+    <div class="priority-item">
+      <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+        ${analysis.highPriorityItems.map(item => `
+          <li style="margin-bottom: 10px; line-height: 1.6;">${this.formatText(item)}</li>
+        `).join('')}
+      </ul>
+    </div>
     ` : ''}
 
     ${analysis.recommendations.length > 0 ? `
     <h2>Recommendations</h2>
-    ${analysis.recommendations.map(rec => `
-      <div class="recommendation-item">${this.formatText(rec)}</div>
-    `).join('')}
+    <div class="recommendation-item">
+      <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+        ${analysis.recommendations.map(rec => `
+          <li style="margin-bottom: 10px; line-height: 1.6;">${this.formatText(rec)}</li>
+        `).join('')}
+      </ul>
+    </div>
     ` : ''}
 
     ${issues && issues.length > 0 ? `
@@ -243,7 +253,7 @@ export class EmailSender {
               ${this.formatProductAreaPill(issue.productArea)}
             </td>
             <td style="padding: 12px;">
-              <span class="issue-key">${issue.key}</span> ${issue.summary}
+              <a href="${this.jiraUrl}/browse/${issue.key}" class="issue-key" style="background-color: #e8f4f8; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-weight: bold; color: #0066cc; text-decoration: none;">${issue.key}</a> ${issue.summary}
             </td>
             <td style="padding: 12px;">
               ${this.formatColoredPill(issue.pageFeatureTheme)}
@@ -331,8 +341,11 @@ export class EmailSender {
     // Convert markdown bold (**text**) to HTML bold
     let formatted = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-    // Highlight issue keys like ABC-123
-    formatted = formatted.replace(/([A-Z]+-\d+)/g, '<span class="issue-key">$1</span>');
+    // Convert issue keys like ABC-123 to clickable links
+    formatted = formatted.replace(/([A-Z]+-\d+)/g, (match) => {
+      const url = `${this.jiraUrl}/browse/${match}`;
+      return `<a href="${url}" class="issue-key" style="background-color: #e8f4f8; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-weight: bold; color: #0066cc; text-decoration: none;">${match}</a>`;
+    });
 
     return formatted;
   }

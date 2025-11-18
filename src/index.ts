@@ -43,7 +43,8 @@ function loadConfig(): Config {
     email: {
       apiKey: process.env.SENDGRID_API_KEY!,
       from: process.env.EMAIL_FROM!,
-      to: process.env.EMAIL_TO!
+      to: process.env.EMAIL_TO!,
+      jiraUrl: process.env.JIRA_URL!
     }
   };
 }
