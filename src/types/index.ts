@@ -116,8 +116,6 @@ export interface AnalysisResult {
     updatedIssues: number;
     commonLabels: string[];
   };
-  groupedByProductArea?: Record<string, SimplifiedIssue[]>;
-  groupedByPageFeatureTheme?: Record<string, SimplifiedIssue[]>;
 }
 
 /**
