@@ -226,6 +226,50 @@ export class EmailSender {
     `).join('')}
     ` : ''}
 
+    ${analysis.groupedByProductArea && Object.keys(analysis.groupedByProductArea).length > 0 ? `
+    <h2>📂 Filter by Product Area</h2>
+    ${Object.entries(analysis.groupedByProductArea)
+      .filter(([, issues]) => issues.length > 0)
+      .map(([area, areaIssues]) => `
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid ${this.getProductAreaColor(area)};">
+          <h3 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50;">
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 14px; background-color: ${this.getProductAreaColor(area)}; color: white; margin-right: 10px;">${area}</span>
+            <span style="color: #6c757d; font-size: 16px; font-weight: normal;">${areaIssues.length} ${areaIssues.length === 1 ? 'issue' : 'issues'}</span>
+          </h3>
+          <ul style="margin: 0; padding-left: 20px; list-style-type: none;">
+            ${areaIssues.map(issue => `
+              <li style="margin-bottom: 8px; padding: 5px 0;">
+                <span class="issue-key">${issue.key}</span> ${issue.summary}
+                ${issue.pageFeatureTheme ? `<span style="color: #6c757d; font-size: 12px; margin-left: 10px;">• ${issue.pageFeatureTheme}</span>` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('')}
+    ` : ''}
+
+    ${analysis.groupedByPageFeatureTheme && Object.keys(analysis.groupedByPageFeatureTheme).length > 0 ? `
+    <h2>🎯 Filter by Page/Feature/Theme</h2>
+    ${Object.entries(analysis.groupedByPageFeatureTheme)
+      .filter(([, issues]) => issues.length > 0)
+      .map(([theme, themeIssues]) => `
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
+          <h3 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50;">
+            ${theme}
+            <span style="color: #6c757d; font-size: 16px; font-weight: normal; margin-left: 10px;">${themeIssues.length} ${themeIssues.length === 1 ? 'issue' : 'issues'}</span>
+          </h3>
+          <ul style="margin: 0; padding-left: 20px; list-style-type: none;">
+            ${themeIssues.map(issue => `
+              <li style="margin-bottom: 8px; padding: 5px 0;">
+                ${issue.productArea ? `<span style="display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; background-color: ${this.getProductAreaColor(issue.productArea)}; color: white; margin-right: 8px;">${issue.productArea}</span>` : ''}
+                <span class="issue-key">${issue.key}</span> ${issue.summary}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('')}
+    ` : ''}
+
     ${issues && issues.length > 0 ? `
     <h2>📋 All Ideas</h2>
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
@@ -321,13 +365,12 @@ export class EmailSender {
     if (!productArea) return '#6c757d';
 
     const colors: Record<string, string> = {
-      'Lucia': '#f0ad4e', // Orange/yellow
       'Portal': '#5bc0de', // Blue
-      'Boardiq': '#5cb85c', // Green
-      'Admin': '#d9534f', // Red
-      'API': '#777', // Gray
-      'Mobile': '#9b59b6', // Purple
-      'Integration': '#e67e22', // Dark orange
+      'Minute Writer': '#9b59b6', // Purple
+      'Report Writer': '#e67e22', // Orange
+      'Actions': '#5cb85c', // Green
+      'Other': '#6c757d', // Gray
+      'Uncategorized': '#95a5a6', // Light gray
     };
 
     // Return predefined color or generate a consistent color from the name
@@ -335,7 +378,7 @@ export class EmailSender {
       return colors[productArea];
     }
 
-    // Generate color from string
+    // Generate color from string for any other areas
     let hash = 0;
     for (let i = 0; i < productArea.length; i++) {
       hash = productArea.charCodeAt(i) + ((hash << 5) - hash);

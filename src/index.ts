@@ -9,22 +9,52 @@ import { getLastRunTimestamp, saveLastRunTimestamp, getLastRunDescription } from
 dotenv.config();
 
 /**
- * Group issues by a specific field
+ * Group issues by a specific field, filtered by allowed categories
  */
-function groupIssuesByField(
+function groupIssuesByCategories(
   issues: SimplifiedIssue[],
-  fieldName: keyof SimplifiedIssue
+  fieldName: keyof SimplifiedIssue,
+  allowedCategories: string[]
 ): Record<string, SimplifiedIssue[]> {
   const grouped: Record<string, SimplifiedIssue[]> = {};
 
+  // Initialize empty arrays for each allowed category
+  allowedCategories.forEach(category => {
+    grouped[category] = [];
+  });
+
+  // Group issues into categories
   issues.forEach(issue => {
     const fieldValue = issue[fieldName];
-    const key = fieldValue && typeof fieldValue === 'string' ? fieldValue : 'Uncategorized';
+    if (fieldValue && typeof fieldValue === 'string') {
+      // Check if the value matches any allowed category (case-insensitive)
+      const matchingCategory = allowedCategories.find(
+        cat => cat.toLowerCase() === fieldValue.toLowerCase()
+      );
 
-    if (!grouped[key]) {
-      grouped[key] = [];
+      if (matchingCategory) {
+        grouped[matchingCategory].push(issue);
+      } else {
+        // If not in allowed list, put in "Other" category
+        if (!grouped['Other']) {
+          grouped['Other'] = [];
+        }
+        grouped['Other'].push(issue);
+      }
+    } else {
+      // No value, put in "Uncategorized"
+      if (!grouped['Uncategorized']) {
+        grouped['Uncategorized'] = [];
+      }
+      grouped['Uncategorized'].push(issue);
     }
-    grouped[key].push(issue);
+  });
+
+  // Remove empty categories
+  Object.keys(grouped).forEach(key => {
+    if (grouped[key].length === 0) {
+      delete grouped[key];
+    }
   });
 
   return grouped;
@@ -140,8 +170,41 @@ async function main() {
 
     // Group issues by Product Area and Page/Feature/Theme
     console.log('📊 Grouping issues by categories...');
-    analysis.groupedByProductArea = groupIssuesByField(simplifiedIssues, 'productArea');
-    analysis.groupedByPageFeatureTheme = groupIssuesByField(simplifiedIssues, 'pageFeatureTheme');
+
+    // Define specific categories we want to track
+    const productAreaCategories = ['Portal', 'Minute Writer', 'Report Writer', 'Actions'];
+    const pageFeatureThemeCategories = [
+      'Briefs',
+      'Account',
+      'Notifications / Emails',
+      'Annotations',
+      'Other files',
+      'Web Reader',
+      'Agenda Planner',
+      'Report Writer to Portal integration',
+      'Report Writer',
+      'Calendar',
+      'APIs & EMS Integrations',
+      'Accessibility',
+      'People page / Permissions',
+      'Minutes outputs',
+      'Agenda Builder',
+      'App',
+      'Security',
+      'Actions',
+      'Login/auth'
+    ];
+
+    analysis.groupedByProductArea = groupIssuesByCategories(
+      simplifiedIssues,
+      'productArea',
+      productAreaCategories
+    );
+    analysis.groupedByPageFeatureTheme = groupIssuesByCategories(
+      simplifiedIssues,
+      'pageFeatureTheme',
+      pageFeatureThemeCategories
+    );
     console.log('✅ Issues grouped\n');
 
     // Display summary to console
