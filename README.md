@@ -277,9 +277,62 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 npm run build      # Compile TypeScript to JavaScript
 npm start          # Run the compiled application
 npm run dev        # Run with ts-node (development)
+npm run query      # Fetch and cache Jira data for querying
+npm run answer     # Query Jira insights with natural language
 npm run lint       # Lint TypeScript code
 npm run format     # Format code with Prettier
 ```
+
+### MCP Server Integration (Claude Code)
+
+This project includes MCP (Model Context Protocol) integration for querying Jira data directly within Claude Code conversations.
+
+#### Setup
+
+The MCP server is configured in `.claude.json` (in your home directory, not this project):
+
+```json
+{
+  "projects": {
+    "/Users/yourname/product-feedback": {
+      "mcpServers": {
+        "jira": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@aashari/mcp-server-atlassian-jira"],
+          "env": {
+            "ATLASSIAN_SITE_NAME": "yourcompany",
+            "ATLASSIAN_USER_EMAIL": "your-email@example.com",
+            "ATLASSIAN_API_TOKEN": "your_jira_api_token"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Important**:
+- `ATLASSIAN_SITE_NAME` should be just your subdomain (e.g., "boardiq" for "boardiq.atlassian.net")
+- Use `ATLASSIAN_USER_EMAIL` (not `JIRA_EMAIL`)
+- Use `ATLASSIAN_API_TOKEN` (not `JIRA_API_TOKEN`)
+- These are the same credentials from your `.env` file
+
+#### Usage
+
+Once configured and Claude Code is restarted, you can query Jira directly in conversations:
+
+```
+"Tell me about issue BPD-1028"
+"Show me all issues updated in the last week"
+"List high priority items in the Product Discovery project"
+```
+
+The MCP server provides tools for:
+- Listing and searching issues (with JQL support)
+- Getting detailed issue information
+- Viewing comments and worklogs
+- Managing issue metadata
 
 ### Adding New Features
 
