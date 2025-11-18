@@ -3,6 +3,7 @@ import { JiraClient } from './jira/client';
 import { ClaudeAnalyzer } from './claude/analyzer';
 import { EmailSender } from './email/sender';
 import { Config, SimplifiedIssue } from './types';
+import { getLastRunTimestamp, saveLastRunTimestamp, getLastRunDescription } from './utils/last-run';
 
 // Load environment variables
 dotenv.config();
@@ -75,7 +76,20 @@ function loadConfig(): Config {
 async function main() {
   console.log('🚀 Starting Product Feedback AI Analyzer...\n');
 
+  const runStartTime = new Date();
+
   try {
+    // Check when we last ran
+    const lastRun = getLastRunTimestamp();
+    const lastRunDesc = getLastRunDescription(lastRun);
+
+    if (lastRun) {
+      console.log(`📅 Last run: ${lastRun.toLocaleString()} (${lastRunDesc})`);
+      console.log(`   Will analyze issues updated since then\n`);
+    } else {
+      console.log('📅 First run - will analyze recent issues\n');
+    }
+
     // Load configuration
     console.log('📋 Loading configuration...');
     const config = loadConfig();
@@ -103,12 +117,12 @@ async function main() {
 
     // Fetch issues from Jira
     console.log('📥 Fetching product feedback from Jira...');
-    const daysBack = parseInt(process.env.DAYS_BACK || '4', 10);
-    const issues = await jiraClient.fetchBoardIssues(daysBack);
+    const issues = await jiraClient.fetchBoardIssues(lastRun);
 
     if (issues.length === 0) {
-      console.log('⚠️  No issues found in the specified time period.');
+      console.log('⚠️  No new or updated issues since last run.');
       console.log('Skipping analysis and email.');
+      console.log('💡 Tip: Issues are considered "new" if created or updated since last run.\n');
       return;
     }
 
@@ -144,6 +158,9 @@ async function main() {
     console.log('📧 Sending email report...');
     await emailSender.sendReport(analysis, simplifiedIssues);
     console.log('✅ Email sent successfully\n');
+
+    // Save the run timestamp for next time
+    saveLastRunTimestamp(runStartTime);
 
     console.log('🎉 Product Feedback Analysis completed successfully!');
   } catch (error) {

@@ -44,10 +44,16 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-
-          # Optional: Override days to look back (default: 4)
-          DAYS_BACK: ${{ vars.DAYS_BACK || '4' }}
         run: npm start
+
+      - name: Commit last run timestamp
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .last-run
+          git diff --staged --quiet || git commit -m "Update last run timestamp [skip ci]"
+          git push
 
       - name: Notify on failure
         if: failure()

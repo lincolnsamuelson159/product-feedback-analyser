@@ -14,6 +14,9 @@ build/
 .env.local
 .env.*.local
 
+# Last run timestamp (tracked in GitHub Actions, ignored locally)
+.last-run
+
 # IDEs
 .vscode/
 .idea/

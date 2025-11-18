@@ -27,15 +27,33 @@ export class JiraClient {
 
   /**
    * Fetch issues from a specific board
+   * @param since - Only fetch issues updated since this date. If null, fetches last 4 days.
    */
-  async fetchBoardIssues(daysBack: number = 4): Promise<JiraIssue[]> {
+  async fetchBoardIssues(since: Date | null = null): Promise<JiraIssue[]> {
     try {
       // Build JQL query - supports both board ID (numeric) and project key (e.g., BPD)
       // For Jira Product Discovery, use project key instead of board
       const isProjectKey = isNaN(Number(this.config.boardId));
+
+      // Build the date filter
+      let dateFilter: string;
+      if (since) {
+        // Format date as YYYY-MM-DD HH:mm for Jira
+        const year = since.getFullYear();
+        const month = String(since.getMonth() + 1).padStart(2, '0');
+        const day = String(since.getDate()).padStart(2, '0');
+        const hours = String(since.getHours()).padStart(2, '0');
+        const minutes = String(since.getMinutes()).padStart(2, '0');
+        const formattedDate = `"${year}-${month}-${day} ${hours}:${minutes}"`;
+        dateFilter = `updated >= ${formattedDate}`;
+      } else {
+        // Default: last 4 days
+        dateFilter = `updated >= -4d`;
+      }
+
       const jql = isProjectKey
-        ? `project = ${this.config.boardId} AND type = Idea AND updated >= -${daysBack}d ORDER BY updated DESC`
-        : `board = ${this.config.boardId} AND updated >= -${daysBack}d ORDER BY updated DESC`;
+        ? `project = ${this.config.boardId} AND type = Idea AND ${dateFilter} ORDER BY updated DESC`
+        : `board = ${this.config.boardId} AND ${dateFilter} ORDER BY updated DESC`;
 
       console.log(`Fetching issues with JQL: ${jql}`);
 

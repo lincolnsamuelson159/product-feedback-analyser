@@ -183,14 +183,15 @@ product-feedback/
 
 ## Customization
 
-### Adjust Analysis Period
+### How It Tracks New Issues
 
-Change how far back to look for issues:
+The system automatically tracks when it last ran and only analyzes issues that are **new or updated since the last run**:
 
-```bash
-# In .env or GitHub Actions secrets
-DAYS_BACK=7  # Look back 7 days instead of 4
-```
+- **First run**: Analyzes all issues from the last 4 days
+- **Subsequent runs**: Only analyzes issues created or updated since the last successful run
+- **Timestamp file**: `.last-run` file stores the last run time (auto-committed in GitHub Actions)
+
+This prevents duplicate analysis and focuses on truly new feedback.
 
 ### Customize Email Content
 
@@ -227,8 +228,8 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 ### "No issues found"
 
 - Check your board ID is correct
-- Verify there are issues updated in the last 4 days
-- Try increasing `DAYS_BACK` temporarily
+- Verify there are new/updated issues since the last run
+- For testing, delete the `.last-run` file to force analyzing last 4 days
 - Check your Jira query permissions
 
 ### "SendGrid Error"
