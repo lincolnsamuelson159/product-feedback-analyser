@@ -17,19 +17,32 @@ export class ClaudeAnalyzer {
 
   /**
    * Analyze product feedback issues
+   * @param newIssues - Issues updated since last run (for Executive Summary, High Priority, Recommendations)
+   * @param allIssues - All issues for historical context (for Key Themes)
+   * @param lastRunDate - Date of last run for contextual phrasing
    */
-  async analyzeIssues(issues: SimplifiedIssue[]): Promise<AnalysisResult> {
-    if (issues.length === 0) {
+  async analyzeIssues(
+    newIssues: SimplifiedIssue[],
+    allIssues?: SimplifiedIssue[],
+    lastRunDate?: Date | null
+  ): Promise<AnalysisResult> {
+    if (newIssues.length === 0) {
       return this.getEmptyAnalysis();
     }
 
-    console.log(`Analyzing ${issues.length} issues with Claude...`);
+    console.log(`Analyzing ${newIssues.length} new issues with Claude...`);
+    if (allIssues && allIssues.length !== newIssues.length) {
+      console.log(`Using ${allIssues.length} total issues for Key Themes analysis...`);
+    }
 
     // Format issues for Claude
-    const issuesText = this.formatIssuesForAnalysis(issues);
+    const newIssuesText = this.formatIssuesForAnalysis(newIssues);
+    const allIssuesText = (allIssues && allIssues.length !== newIssues.length)
+      ? this.formatIssuesForAnalysis(allIssues)
+      : null;
 
     // Calculate metrics
-    const metrics = this.calculateMetrics(issues);
+    const metrics = this.calculateMetrics(newIssues);
 
     try {
       const message = await this.client.messages.create({
@@ -38,7 +51,7 @@ export class ClaudeAnalyzer {
         messages: [
           {
             role: 'user',
-            content: this.buildAnalysisPrompt(issuesText, metrics)
+            content: this.buildAnalysisPrompt(newIssuesText, allIssuesText, metrics, lastRunDate)
           }
         ]
       });
@@ -57,36 +70,60 @@ export class ClaudeAnalyzer {
   /**
    * Build the analysis prompt for Claude
    */
-  private buildAnalysisPrompt(issuesText: string, metrics: any): string {
-    return `You are a product manager analyzing customer feedback from Jira. Review the following product feedback issues and provide a comprehensive analysis.
+  private buildAnalysisPrompt(
+    newIssuesText: string,
+    allIssuesText: string | null,
+    metrics: any,
+    lastRunDate?: Date | null
+  ): string {
+    const lastRunContext = lastRunDate
+      ? `\nLast email was sent: ${lastRunDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at ${lastRunDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+      : '';
 
-## Product Feedback Issues (${metrics.totalIssues} total)
+    const themesInstruction = allIssuesText
+      ? `\n## ALL Product Feedback Issues (for Key Themes analysis)
 
-${issuesText}
+${allIssuesText}
 
+**Important for Key Themes**: Use the ALL issues above to identify overarching themes. Reference the last run date and use comparative language like:
+- "Key themes continue to be..." (if same themes persist)
+- "New themes have emerged since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if new themes)
+- "No significant new themes since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if no new themes)
+`
+      : '';
+
+    return `You are a product manager analyzing customer feedback from Jira. Review the following product feedback issues and provide a comprehensive analysis.${lastRunContext}
+
+## NEW/UPDATED Product Feedback Issues (${metrics.totalIssues} new since last run)
+
+${newIssuesText}
+${themesInstruction}
 ## Your Task
 
 Analyze these issues and provide analysis in this EXACT structure:
 
 ## Executive Summary
+Focus on NEW issues only. Summarize the most important NEW feedback since last run.
 - [BPD-XXX, BPD-YYY] First insight with issue keys in brackets
 - [BPD-ZZZ] Second insight with issue keys in brackets
 - [BPD-AAA, BPD-BBB] Third insight with issue keys in brackets
 
 ## Key Themes
+${allIssuesText ? 'Analyze ALL issues (both new and historical) to identify overarching themes. Use comparative language referencing the last run date.' : 'Analyze the issues to identify key themes.'}
 **Theme 1 Title**
-What it represents: 1-2 sentences with issue keys
+What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
 Why it matters: 1-2 sentences with revenue/customer impact
 
 **Theme 2 Title**
-What it represents: 1-2 sentences with issue keys
+What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
 Why it matters: 1-2 sentences with revenue/customer impact
 
 **Theme 3 Title**
-What it represents: 1-2 sentences with issue keys
+What it represents: 1-2 sentences with issue keys ${allIssuesText ? '(use language like "continues to be..." or "has emerged...")' : ''}
 Why it matters: 1-2 sentences with revenue/customer impact
 
 ## High Priority Items
+Focus on NEW issues only. What needs immediate attention from the NEW feedback?
 **BPD-XXX: Issue Title**
 Why it's important: Revenue/customer impact
 Recommended action: Specific next steps
@@ -100,15 +137,16 @@ Why it's important: Revenue/customer impact
 Recommended action: Specific next steps
 
 ## Recommendations
+Focus on NEW issues only. What should we do based on NEW feedback?
 1. Specific action with rationale [BPD-XXX]
 2. Specific action with rationale [BPD-YYY]
 3. Specific action with rationale [BPD-ZZZ]
 
 ## CRITICAL RULES - DO NOT DEVIATE:
-- EXACTLY 3 bullets in Executive Summary
-- EXACTLY 3 themes in Key Themes
-- EXACTLY 3 items in High Priority Items
-- EXACTLY 3 items in Recommendations
+- EXACTLY 3 bullets in Executive Summary (NEW issues only)
+- EXACTLY 3 themes in Key Themes (${allIssuesText ? 'ALL issues with comparative language' : 'from provided issues'})
+- EXACTLY 3 items in High Priority Items (NEW issues only)
+- EXACTLY 3 items in Recommendations (NEW issues only)
 - NO MORE, NO LESS than 3 in each section
 - Every section MUST be present
 - Focus on the TOP 3 most critical items only

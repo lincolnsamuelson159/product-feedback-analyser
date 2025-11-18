@@ -26,10 +26,26 @@ export class JiraClient {
   }
 
   /**
+   * Fetch ALL issues from a specific board (no date filtering)
+   * Used for historical context when analyzing themes
+   */
+  async fetchAllBoardIssues(): Promise<JiraIssue[]> {
+    return this.fetchIssuesWithFilter('all');
+  }
+
+  /**
    * Fetch issues from a specific board
    * @param since - Only fetch issues updated since this date. If null, fetches last 4 days.
    */
   async fetchBoardIssues(since: Date | null = null): Promise<JiraIssue[]> {
+    return this.fetchIssuesWithFilter(since);
+  }
+
+  /**
+   * Internal method to fetch issues with optional date filtering
+   * @param since - Date to filter by, null for last 4 days, or 'all' for no date filter
+   */
+  private async fetchIssuesWithFilter(since: Date | null | 'all'): Promise<JiraIssue[]> {
     try {
       // Build JQL query - supports both board ID (numeric) and project key (e.g., BPD)
       // For Jira Product Discovery, use project key instead of board
@@ -37,7 +53,10 @@ export class JiraClient {
 
       // Build the date filter
       let dateFilter: string;
-      if (since) {
+      if (since === 'all') {
+        // No date filter - fetch all issues
+        dateFilter = '';
+      } else if (since) {
         // Format date as YYYY-MM-DD HH:mm for Jira
         const year = since.getFullYear();
         const month = String(since.getMonth() + 1).padStart(2, '0');
@@ -45,15 +64,15 @@ export class JiraClient {
         const hours = String(since.getHours()).padStart(2, '0');
         const minutes = String(since.getMinutes()).padStart(2, '0');
         const formattedDate = `"${year}-${month}-${day} ${hours}:${minutes}"`;
-        dateFilter = `updated >= ${formattedDate}`;
+        dateFilter = `AND updated >= ${formattedDate}`;
       } else {
         // Default: last 4 days
-        dateFilter = `updated >= -4d`;
+        dateFilter = `AND updated >= -4d`;
       }
 
       const jql = isProjectKey
-        ? `project = ${this.config.boardId} AND type = Idea AND ${dateFilter} ORDER BY updated DESC`
-        : `board = ${this.config.boardId} AND ${dateFilter} ORDER BY updated DESC`;
+        ? `project = ${this.config.boardId} AND type = Idea ${dateFilter} ORDER BY updated DESC`
+        : `board = ${this.config.boardId} ${dateFilter} ORDER BY updated DESC`;
 
       console.log(`Fetching issues with JQL: ${jql}`);
 

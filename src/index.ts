@@ -147,28 +147,41 @@ async function main() {
 
     // Fetch issues from Jira
     console.log('📥 Fetching product feedback from Jira...');
-    const issues = await jiraClient.fetchBoardIssues(lastRun);
+    const newIssues = await jiraClient.fetchBoardIssues(lastRun);
 
-    if (issues.length === 0) {
+    if (newIssues.length === 0) {
       console.log('⚠️  No new or updated issues since last run.');
       console.log('Skipping analysis and email.');
       console.log('💡 Tip: Issues are considered "new" if created or updated since last run.\n');
       return;
     }
 
-    console.log(`✅ Fetched ${issues.length} issues\n`);
+    console.log(`✅ Fetched ${newIssues.length} new/updated issues\n`);
+
+    // Fetch ALL issues for Key Themes context (only if we have a lastRun date)
+    let allIssues = newIssues;
+    if (lastRun) {
+      console.log('📥 Fetching all historical issues for Key Themes analysis...');
+      allIssues = await jiraClient.fetchAllBoardIssues();
+      console.log(`✅ Fetched ${allIssues.length} total issues\n`);
+    }
 
     // Simplify issues for analysis
     console.log('🔄 Processing issues...');
-    const simplifiedIssues = jiraClient.simplifyIssues(issues);
+    const simplifiedNewIssues = jiraClient.simplifyIssues(newIssues);
+    const simplifiedAllIssues = lastRun ? jiraClient.simplifyIssues(allIssues) : undefined;
     console.log('✅ Issues processed\n');
 
     // Analyze with Claude
     console.log('🤖 Analyzing feedback with Claude AI...');
-    const analysis = await claudeAnalyzer.analyzeIssues(simplifiedIssues);
+    const analysis = await claudeAnalyzer.analyzeIssues(
+      simplifiedNewIssues,
+      simplifiedAllIssues,
+      lastRun
+    );
     console.log('✅ Analysis complete\n');
 
-    // Group issues by Product Area and Page/Feature/Theme
+    // Group issues by Product Area and Page/Feature/Theme (using new issues only)
     console.log('📊 Grouping issues by categories...');
 
     // Define specific categories we want to track
@@ -196,12 +209,12 @@ async function main() {
     ];
 
     analysis.groupedByProductArea = groupIssuesByCategories(
-      simplifiedIssues,
+      simplifiedNewIssues,
       'productArea',
       productAreaCategories
     );
     analysis.groupedByPageFeatureTheme = groupIssuesByCategories(
-      simplifiedIssues,
+      simplifiedNewIssues,
       'pageFeatureTheme',
       pageFeatureThemeCategories
     );
@@ -210,7 +223,7 @@ async function main() {
     // Display summary to console
     console.log('📊 Analysis Summary:');
     console.log('─'.repeat(50));
-    console.log(`Total Issues: ${analysis.metrics.totalIssues}`);
+    console.log(`Total New/Updated Issues: ${analysis.metrics.totalIssues}`);
     console.log(`New Issues: ${analysis.metrics.newIssues}`);
     console.log(`Updated Issues: ${analysis.metrics.updatedIssues}`);
     console.log(`\nExecutive Summary:`);
@@ -219,7 +232,7 @@ async function main() {
 
     // Send email report
     console.log('📧 Sending email report...');
-    await emailSender.sendReport(analysis, simplifiedIssues);
+    await emailSender.sendReport(analysis, simplifiedNewIssues);
     console.log('✅ Email sent successfully\n');
 
     // Save the run timestamp for next time
