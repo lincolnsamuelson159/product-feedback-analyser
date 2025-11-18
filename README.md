@@ -277,8 +277,6 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 npm run build      # Compile TypeScript to JavaScript
 npm start          # Run the compiled application
 npm run dev        # Run with ts-node (development)
-npm run query      # Fetch and cache Jira data for querying
-npm run answer     # Query Jira insights with natural language
 npm run lint       # Lint TypeScript code
 npm run format     # Format code with Prettier
 ```
@@ -330,9 +328,12 @@ Once configured and Claude Code is restarted, you can query Jira directly in con
 
 The MCP server provides tools for:
 - Listing and searching issues (with JQL support)
-- Getting detailed issue information
+- Getting detailed issue information (description, status, priority, dates, assignee)
 - Viewing comments and worklogs
-- Managing issue metadata
+- Accessing custom fields (Product Area, Page/Feature/Theme)
+- Viewing linked issues
+
+**Important Limitation**: Jira Product Discovery "Insights" are not accessible via any API (including MCP). Insights can only be viewed through the Jira Product Discovery web interface.
 
 ### Adding New Features
 
