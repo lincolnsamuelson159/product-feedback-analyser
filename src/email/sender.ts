@@ -325,11 +325,16 @@ export class EmailSender {
   }
 
   /**
-   * Format text to highlight issue keys
+   * Format text to highlight issue keys and convert markdown bold to HTML
    */
   private formatText(text: string): string {
+    // Convert markdown bold (**text**) to HTML bold
+    let formatted = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
     // Highlight issue keys like ABC-123
-    return text.replace(/([A-Z]+-\d+)/g, '<span class="issue-key">$1</span>');
+    formatted = formatted.replace(/([A-Z]+-\d+)/g, '<span class="issue-key">$1</span>');
+
+    return formatted;
   }
 
   /**
