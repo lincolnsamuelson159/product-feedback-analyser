@@ -22,6 +22,25 @@ This is an automated product feedback analyzer that:
 - Sends twice-weekly email reports via SendGrid
 - Uses MCP server for interactive Jira queries in Claude Code
 
+## Multi-Client Insight Formatting
+
+When analyzing issues with multiple client insights (multiple clients mentioned in comments), format as bullet points with indented sub-bullets:
+
+**Client Name** (Contact names)
+- **Problem**: Description of the problem/feedback
+- **ARR Impact**: Value or "Not specified"
+- **Required for deal?**: Answer or "Not specified"
+- **Timeline**: Timeline or "Not specified"
+- **Other clients affected?**: Answer or "Not specified"
+
+Example:
+**Keller Group** (Silvana CoSec, Jamie D, Asst CoSec)
+- **Problem**: Struggle with s.172 for annual reports. Want to see stakeholder perspectives across all board packs.
+- **ARR Impact**: Not specified
+- **Required for deal?**: Client more likely to buy Insight Driver
+- **Timeline**: n/a
+- **Other clients affected?**: No
+
 ## Important Notes
 
 - Jira Product Discovery "Insights" are NOT accessible via API - only through the web UI
