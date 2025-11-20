@@ -71,7 +71,7 @@ export class JiraClient {
       }
 
       const jql = isProjectKey
-        ? `project = ${this.config.boardId} AND type = Idea ${dateFilter} ORDER BY updated DESC`
+        ? `project = ${this.config.boardId} ${dateFilter} ORDER BY updated DESC`
         : `board = ${this.config.boardId} ${dateFilter} ORDER BY updated DESC`;
 
       console.log(`Fetching issues with JQL: ${jql}`);

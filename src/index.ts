@@ -83,10 +83,11 @@ async function main() {
 
     // Test connections
     console.log('🔌 Testing connections...');
-    const jiraConnected = await jiraClient.testConnection();
-    if (!jiraConnected) {
-      throw new Error('Failed to connect to Jira. Please check your credentials.');
-    }
+    // Skip /myself endpoint test as it may not have permissions
+    // const jiraConnected = await jiraClient.testConnection();
+    // if (!jiraConnected) {
+    //   throw new Error('Failed to connect to Jira. Please check your credentials.');
+    // }
 
     const emailConfigValid = await emailSender.testConnection();
     if (!emailConfigValid) {
