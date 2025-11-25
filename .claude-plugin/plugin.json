@@ -1,0 +1,8 @@
+{
+  "name": "product-feedback",
+  "version": "1.0.0",
+  "description": "AI-powered Jira product feedback analyzer with automated twice-weekly email reports, trend identification, and actionable insights",
+  "author": "lsamuelson",
+  "license": "MIT",
+  "keywords": ["jira", "product-feedback", "ai-analysis", "email-reports", "claude"]
+}
