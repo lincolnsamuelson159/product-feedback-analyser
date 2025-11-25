@@ -41,20 +41,50 @@ cd product-feedback
 npm install
 ```
 
-### 2. Get Required API Keys
+### 2. Set Up Atlassian OAuth (Recommended)
 
-#### Jira API Token
+The recommended authentication method uses OAuth 2.0 with rotating refresh tokens, which won't expire unexpectedly like API tokens.
+
+#### Create an OAuth App
+
+1. Go to [https://developer.atlassian.com/console/myapps/](https://developer.atlassian.com/console/myapps/)
+2. Click **Create** → **OAuth 2.0 integration**
+3. Give it a name (e.g., "Product Feedback Analyzer")
+4. Under **Authorization**, add callback URL: `http://localhost:3000/callback`
+5. Under **Permissions**, add these scopes:
+   - `read:jira-work` (Jira platform → View Jira issue data)
+6. Copy your **Client ID** and **Client Secret**
+
+#### Find Your Cloud ID
+
+1. Go to [https://admin.atlassian.com](https://admin.atlassian.com)
+2. Select your organization
+3. The Cloud ID is in the URL or can be found via the API
+
+#### Get Your Initial Refresh Token
+
+Run the OAuth setup script:
+
+```bash
+npm run get-token
+```
+
+This will:
+1. Open a browser for you to authorize the app
+2. Exchange the authorization code for tokens
+3. Save the refresh token to `.oauth-token.json`
+
+The refresh token automatically rotates on each use, so it stays fresh.
+
+#### Alternative: Jira API Token (Legacy)
+
+If you prefer API tokens:
 
 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click "Create API token"
-3. Give it a name (e.g., "Product Feedback Analyzer")
-4. Copy the token immediately (you won't be able to see it again)
+3. Copy the token immediately
 
-#### Find Your Jira Board ID
-
-1. Navigate to your Jira board
-2. Look at the URL: `https://yourcompany.atlassian.net/jira/software/projects/ABC/boards/123`
-3. The board ID is the number at the end (e.g., `123`)
+**Note:** API tokens can expire or be revoked, which will break automated runs.
 
 #### Anthropic API Key
 
@@ -74,32 +104,40 @@ npm install
 
 #### For Local Development
 
-1. Copy the example file:
-   ```bash
-   cp .env.example .env
-   ```
+Create a `.env` file with your values:
 
-2. Edit `.env` with your actual values:
-   ```bash
-   JIRA_URL=https://yourcompany.atlassian.net
-   JIRA_EMAIL=your-email@example.com
-   JIRA_API_TOKEN=your_actual_token
-   JIRA_BOARD_ID=123
-   ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
-   SENDGRID_API_KEY=SG.xxxxx
-   EMAIL_FROM=notifications@yourdomain.com
-   EMAIL_TO=your-email@example.com
-   ```
+```bash
+# OAuth Authentication (Recommended)
+ATLASSIAN_CLIENT_ID=your_oauth_client_id
+ATLASSIAN_CLIENT_SECRET=your_oauth_client_secret
+ATLASSIAN_CLOUD_ID=your_cloud_id
+ATLASSIAN_PROJECT_KEY=BPD
 
-#### For GitHub Actions
+# OR Legacy API Token Authentication
+JIRA_URL=https://yourcompany.atlassian.net
+JIRA_EMAIL=your-email@example.com
+JIRA_API_TOKEN=your_actual_token
+JIRA_BOARD_ID=123
 
-1. Go to your GitHub repository
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret** and add each of the following:
-   - `JIRA_URL`
-   - `JIRA_EMAIL`
-   - `JIRA_API_TOKEN`
-   - `JIRA_BOARD_ID`
+# Required for both
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+SENDGRID_API_KEY=SG.xxxxx
+EMAIL_FROM=notifications@yourdomain.com
+EMAIL_TO=your-email@example.com
+```
+
+**Note:** If OAuth credentials are configured, they take priority over API token auth.
+
+#### For GitLab CI/CD
+
+1. Go to your GitLab project
+2. Navigate to **Settings** → **CI/CD** → **Variables**
+3. Add the following variables:
+   - `ATLASSIAN_CLIENT_ID`
+   - `ATLASSIAN_CLIENT_SECRET`
+   - `ATLASSIAN_CLOUD_ID`
+   - `ATLASSIAN_REFRESH_TOKEN` (from `.oauth-token.json`)
+   - `ATLASSIAN_PROJECT_KEY`
    - `ANTHROPIC_API_KEY`
    - `SENDGRID_API_KEY`
    - `EMAIL_FROM`
@@ -126,55 +164,38 @@ If everything is configured correctly, you should see:
 - Analysis progress
 - Email sent confirmation
 
-### 5. Configure GitHub Actions Schedule
+### 5. Run the Analyzer
 
-The workflow runs on a schedule defined in `.github/workflows/analyze-feedback.yml`:
+```bash
+# Build and run
+npm run build
+npm start
 
-```yaml
-schedule:
-  # Runs every Monday and Thursday at 9:00 AM UTC
-  - cron: '0 9 * * 1,4'
+# Or for development
+npm run dev
 ```
-
-**Common Schedule Options:**
-
-- `'0 9 * * 1,4'` - Monday & Thursday at 9 AM UTC
-- `'0 14 * * 2,5'` - Tuesday & Friday at 2 PM UTC
-- `'30 8 * * 1,3'` - Monday & Wednesday at 8:30 AM UTC
-
-**Convert to Your Timezone:**
-- Find your offset from UTC
-- Example: If you're in PST (UTC-8) and want 9 AM PST, use 5 PM UTC (17:00)
-- Cron: `'0 17 * * 1,4'`
-
-### 6. Manual Trigger (Testing)
-
-You can manually trigger the workflow from GitHub:
-
-1. Go to your repository on GitHub
-2. Click **Actions** tab
-3. Select **Product Feedback Analysis** workflow
-4. Click **Run workflow** → **Run workflow**
 
 ## Project Structure
 
 ```
 product-feedback/
-├── .github/
-│   └── workflows/
-│       └── analyze-feedback.yml    # GitHub Actions workflow
+├── scripts/
+│   └── get-oauth-token.ts          # OAuth setup script
 ├── src/
 │   ├── jira/
-│   │   └── client.ts               # Jira API integration
+│   │   ├── client.ts               # Legacy API token client
+│   │   └── atlassian-client.ts     # OAuth-based client (recommended)
 │   ├── claude/
 │   │   └── analyzer.ts             # Claude AI analysis logic
 │   ├── email/
 │   │   └── sender.ts               # SendGrid email sender
+│   ├── utils/
+│   │   └── oauth-token.ts          # OAuth token management
 │   ├── types/
 │   │   └── index.ts                # TypeScript type definitions
 │   └── index.ts                    # Main orchestration
 ├── dist/                           # Compiled JavaScript (generated)
-├── .env.example                    # Environment variables template
+├── .oauth-token.json               # Local OAuth token (git-ignored)
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
@@ -218,16 +239,21 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 
 ## Troubleshooting
 
-### "Failed to connect to Jira"
+### "Failed to refresh OAuth token"
+
+- Verify your `ATLASSIAN_CLIENT_ID` and `ATLASSIAN_CLIENT_SECRET` are correct
+- Re-run `npm run get-token` to get a fresh refresh token
+- Check that your OAuth app has the `read:jira-work` scope enabled
+
+### "Failed to connect to Jira" (Legacy API Token)
 
 - Verify your Jira URL is correct (should be `https://yourcompany.atlassian.net`)
-- Check that your API token is valid
+- Check that your API token is valid and not expired
 - Ensure your email matches your Jira account
-- Verify you have access to the specified board
 
 ### "No issues found"
 
-- Check your board ID is correct
+- Check your project key is correct
 - Verify there are new/updated issues since the last run
 - For testing, delete the `.last-run` file to force analyzing last 4 days
 - Check your Jira query permissions
@@ -244,13 +270,6 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 - Check your Anthropic API key is valid
 - Verify you haven't exceeded rate limits
 - Ensure you have sufficient credits in your Anthropic account
-
-### GitHub Actions Not Running
-
-- Verify secrets are set correctly in repository settings
-- Check the workflow file syntax
-- Look at the Actions tab for error messages
-- Ensure GitHub Actions is enabled for your repository
 
 ## Cost Estimates
 
@@ -277,6 +296,7 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 npm run build      # Compile TypeScript to JavaScript
 npm start          # Run the compiled application
 npm run dev        # Run with ts-node (development)
+npm run get-token  # Get OAuth refresh token (one-time setup)
 npm run lint       # Lint TypeScript code
 npm run format     # Format code with Prettier
 ```
@@ -380,9 +400,9 @@ The MCP server provides tools for:
 
 ## Security Notes
 
-- Never commit `.env` file or API keys to git
-- Use GitHub Secrets for all sensitive values
-- Rotate API keys periodically
+- Never commit `.env` or `.oauth-token.json` to git
+- Use CI/CD secrets for all sensitive values
+- OAuth refresh tokens rotate automatically on each use
 - Use minimum required permissions for all API keys
 - Review access logs regularly
 
