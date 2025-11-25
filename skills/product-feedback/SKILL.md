@@ -1,6 +1,6 @@
 ---
 name: product-feedback
-description: "Use this skill when working in the product-feedback repository. Applies to ALL interactions involving Jira issues, product feedback analysis, client insights, or feature prioritization in this project."
+description: "ALWAYS use this skill when: (1) working in any directory containing 'product-feedback' in the path, OR (2) user mentions 'product feedback', 'Jira feedback', 'BPD' (the Jira project), 'client insights', 'feature prioritization', OR (3) user asks about Jira issues related to product discovery or feedback analysis. This skill enforces no-recommendations communication style and proper client insight formatting."
 ---
 
 # Product Feedback Analyzer
