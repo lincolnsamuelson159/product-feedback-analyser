@@ -1,9 +1,10 @@
 import dotenv from 'dotenv';
-import { JiraClient } from './jira/client';
+import { AtlassianClient } from './jira/atlassian-client';
 import { ClaudeAnalyzer } from './claude/analyzer';
 import { EmailSender } from './email/sender';
 import { Config } from './types';
 import { getLastRunTimestamp, saveLastRunTimestamp, getLastRunDescription } from './utils/last-run';
+import { getOAuthConfig, saveRefreshToken, hasOAuthConfig } from './utils/oauth-token';
 
 // Load environment variables
 dotenv.config();
@@ -12,29 +13,49 @@ dotenv.config();
  * Load configuration from environment variables
  */
 function loadConfig(): Config {
-  const requiredEnvVars = [
-    'JIRA_URL',
-    'JIRA_EMAIL',
-    'JIRA_API_TOKEN',
-    'JIRA_BOARD_ID',
-    'ANTHROPIC_API_KEY',
-    'SENDGRID_API_KEY',
-    'EMAIL_FROM',
-    'EMAIL_TO'
-  ];
+  // Check for OAuth configuration (new method)
+  if (hasOAuthConfig()) {
+    console.log('🔐 Using Atlassian OAuth authentication');
+    const requiredEnvVars = [
+      'ATLASSIAN_CLIENT_ID',
+      'ATLASSIAN_CLIENT_SECRET',
+      'ATLASSIAN_CLOUD_ID',
+      'ANTHROPIC_API_KEY',
+      'SENDGRID_API_KEY',
+      'EMAIL_FROM',
+      'EMAIL_TO'
+    ];
 
-  const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+  } else {
+    // Fall back to legacy API token method
+    console.log('🔑 Using legacy Jira API token authentication');
+    const requiredEnvVars = [
+      'JIRA_URL',
+      'JIRA_EMAIL',
+      'JIRA_API_TOKEN',
+      'JIRA_BOARD_ID',
+      'ANTHROPIC_API_KEY',
+      'SENDGRID_API_KEY',
+      'EMAIL_FROM',
+      'EMAIL_TO'
+    ];
 
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
   }
 
   return {
     jira: {
-      url: process.env.JIRA_URL!,
-      email: process.env.JIRA_EMAIL!,
-      apiToken: process.env.JIRA_API_TOKEN!,
-      boardId: process.env.JIRA_BOARD_ID!
+      url: process.env.JIRA_URL || 'https://boardiq.atlassian.net',
+      email: process.env.JIRA_EMAIL || '',
+      apiToken: process.env.JIRA_API_TOKEN || '',
+      boardId: process.env.JIRA_BOARD_ID || 'BPD'
     },
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -44,7 +65,7 @@ function loadConfig(): Config {
       apiKey: process.env.SENDGRID_API_KEY!,
       from: process.env.EMAIL_FROM!,
       to: process.env.EMAIL_TO!,
-      jiraUrl: process.env.JIRA_URL!
+      jiraUrl: process.env.JIRA_URL || 'https://boardiq.atlassian.net'
     }
   };
 }
@@ -76,7 +97,30 @@ async function main() {
 
     // Initialize clients
     console.log('🔧 Initializing clients...');
-    const jiraClient = new JiraClient(config.jira);
+
+    let jiraClient: AtlassianClient;
+
+    // Use OAuth if configured, otherwise fall back to legacy
+    if (hasOAuthConfig()) {
+      const oauthConfig = getOAuthConfig();
+      jiraClient = new AtlassianClient(oauthConfig);
+
+      // Refresh the access token (this also rotates the refresh token)
+      await jiraClient.refreshAccessToken();
+
+      // Save the new refresh token for the next run
+      const newRefreshToken = jiraClient.getNewRefreshToken();
+      if (newRefreshToken) {
+        saveRefreshToken(newRefreshToken);
+      }
+    } else {
+      // Legacy mode - import and use old client
+      const { JiraClient } = await import('./jira/client');
+      const legacyClient = new JiraClient(config.jira);
+      // Cast to AtlassianClient interface (they have the same methods)
+      jiraClient = legacyClient as unknown as AtlassianClient;
+    }
+
     const claudeAnalyzer = new ClaudeAnalyzer(config.anthropic);
     const emailSender = new EmailSender(config.email);
     console.log('✅ Clients initialized\n');

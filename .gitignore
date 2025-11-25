@@ -44,3 +44,6 @@ temp/
 
 # Cache files
 .jira-data-cache.json
+
+# OAuth tokens (contains sensitive refresh tokens)
+.oauth-token.json
