@@ -41,6 +41,20 @@ Example:
 - **Timeline**: n/a
 - **Other clients affected?**: No
 
+## MCP Server Usage
+
+**Use `atlassian` MCP server for all Jira queries** (e.g., `mcp__atlassian__searchJiraIssuesUsingJql`).
+
+Do NOT use the `jira` MCP server (`mcp__jira__*`) - it has authentication issues and returns empty results.
+
+Example:
+```
+mcp__atlassian__searchJiraIssuesUsingJql(
+  cloudId: "boardiq.atlassian.net",
+  jql: "project = BPD ORDER BY updated DESC"
+)
+```
+
 ## Important Notes
 
 - Jira Product Discovery "Insights" are NOT accessible via API - only through the web UI
