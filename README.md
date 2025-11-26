@@ -8,7 +8,7 @@ Automated AI-powered analysis of product feedback from Jira, delivered twice wee
 - **AI-Powered Analysis**: Uses Claude (Anthropic) to analyze feedback and extract insights
 - **Smart Summarization**: Identifies key themes, high-priority items, and actionable recommendations
 - **Beautiful Email Reports**: Sends professionally formatted HTML email summaries
-- **GitHub Actions Scheduling**: Runs automatically twice per week (configurable)
+- **GitLab CI/CD Scheduling**: Runs automatically twice per week (configurable)
 - **Easy Configuration**: Simple environment variable setup
 
 ## What You Get
@@ -36,8 +36,8 @@ Each twice-weekly report includes:
 ### 1. Clone and Install
 
 ```bash
-git clone <your-repo-url>
-cd product-feedback
+git clone https://gitlab.com/boardiq/product-and-prototypes/product-feedback-analyser.git
+cd product-feedback-analyser
 npm install
 ```
 
@@ -210,7 +210,7 @@ The system automatically tracks when it last ran and only analyzes issues that a
 
 - **First run**: Analyzes all issues from the last 4 days
 - **Subsequent runs**: Only analyzes issues created or updated since the last successful run
-- **Timestamp file**: `.last-run` file stores the last run time (auto-committed in GitHub Actions)
+- **Timestamp file**: `.last-run` file stores the last run time (auto-committed in GitLab CI/CD)
 
 This prevents duplicate analysis and focuses on truly new feedback.
 
@@ -281,9 +281,8 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 - Free tier: 100 emails/day (sufficient for this use case)
 - First 40,000 emails free for first 30 days
 
-### GitHub Actions
-- Free for public repositories
-- 2,000 minutes/month free for private repositories
+### GitLab CI/CD
+- 400 compute minutes/month on free tier
 - This workflow uses ~2-5 minutes per run
 
 **Total estimated cost: $4-16/month** (primarily Claude API)
@@ -366,7 +365,7 @@ The MCP server provides tools for:
 
 ```
 ┌─────────────────────┐
-│  GitHub Actions     │  Runs twice weekly
+│  GitLab CI/CD       │  Runs twice weekly
 │  (Scheduled)        │
 └──────────┬──────────┘
            │
@@ -414,7 +413,7 @@ MIT
 
 For issues or questions:
 1. Check the troubleshooting section above
-2. Review GitHub Actions logs for errors
+2. Review GitLab CI/CD pipeline logs for errors
 3. Verify all API keys and configurations
 4. Open an issue in this repository
 
@@ -424,4 +423,4 @@ For issues or questions:
 - [Jira REST API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
 - [Anthropic Claude API](https://www.anthropic.com)
 - [SendGrid Email API](https://sendgrid.com)
-- [GitHub Actions](https://github.com/features/actions)
+- [GitLab CI/CD](https://docs.gitlab.com/ee/ci/)
