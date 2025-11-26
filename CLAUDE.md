@@ -1,5 +1,50 @@
 # Claude Instructions for Product Feedback Analyzer
 
+## First-Time Setup
+
+If a user is setting up this project for the first time, guide them through these steps:
+
+### 1. Install dependencies
+```bash
+npm install
+```
+
+### 2. Set up Atlassian OAuth (Required)
+
+1. Go to https://developer.atlassian.com/console/myapps/
+2. Click **Create** → **OAuth 2.0 integration**
+3. Name it (e.g., "Product Feedback Analyzer")
+4. Under **Authorization**, add callback URL: `http://localhost:3000/callback`
+5. Under **Permissions**, add scope: `read:jira-work`
+6. Copy the **Client ID** and **Client Secret**
+
+### 3. Find Cloud ID
+
+Visit `https://boardiq.atlassian.net/_edge/tenant_info` and copy the `cloudId` value.
+
+### 4. Get refresh token
+```bash
+npm run get-token
+```
+This opens a browser to authorize, then saves the token to `.oauth-token.json`.
+
+### 5. Create `.env` file
+
+Copy `.env.example` to `.env` and fill in:
+- `ATLASSIAN_CLIENT_ID` - from step 2
+- `ATLASSIAN_CLIENT_SECRET` - from step 2
+- `ATLASSIAN_CLOUD_ID` - from step 3
+- `ATLASSIAN_PROJECT_KEY` - use `BPD`
+- `ANTHROPIC_API_KEY` - from https://console.anthropic.com/settings/keys
+- `SENDGRID_API_KEY` - from SendGrid dashboard
+- `EMAIL_FROM` - verified sender email in SendGrid
+- `EMAIL_TO` - recipient email address
+
+### 6. Test the setup
+```bash
+npm run dev
+```
+
 ## Communication Style
 
 **Do not include recommendations in responses.** When answering questions about Jira data, product features, or analysis:
