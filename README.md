@@ -41,9 +41,9 @@ cd product-feedback-analyser
 npm install
 ```
 
-### 2. Set Up Atlassian OAuth (Recommended)
+### 2. Set Up Atlassian OAuth (Required)
 
-The recommended authentication method uses OAuth 2.0 with rotating refresh tokens, which won't expire unexpectedly like API tokens.
+**You must complete this section first.** The analyzer uses OAuth 2.0 with rotating refresh tokens for reliable Jira access.
 
 #### Create an OAuth App
 
@@ -57,9 +57,10 @@ The recommended authentication method uses OAuth 2.0 with rotating refresh token
 
 #### Find Your Cloud ID
 
-1. Go to [https://admin.atlassian.com](https://admin.atlassian.com)
-2. Select your organization
-3. The Cloud ID is in the URL or can be found via the API
+1. Go to your Jira site (e.g., `https://boardiq.atlassian.net`)
+2. Open browser dev tools (F12) → Console
+3. Run: `JSON.parse(document.getElementById('__NEXT_DATA__')?.textContent || '{}')?.props?.tenantContext?.cloudId`
+4. Or visit: `https://yoursite.atlassian.net/_edge/tenant_info` and copy the `cloudId` value
 
 #### Get Your Initial Refresh Token
 
@@ -76,15 +77,15 @@ This will:
 
 The refresh token automatically rotates on each use, so it stays fresh.
 
-#### Alternative: Jira API Token (Legacy)
+#### Alternative: Jira API Token (Legacy - Optional)
 
-If you prefer API tokens:
+If you also want to use the legacy API token method as a fallback:
 
 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click "Create API token"
 3. Copy the token immediately
 
-**Note:** API tokens can expire or be revoked, which will break automated runs.
+**Note:** API tokens can expire or be revoked. OAuth (above) takes priority when both are configured.
 
 #### Anthropic API Key
 
@@ -107,13 +108,13 @@ If you prefer API tokens:
 Create a `.env` file with your values:
 
 ```bash
-# OAuth Authentication (Recommended)
+# OAuth Authentication (Required)
 ATLASSIAN_CLIENT_ID=your_oauth_client_id
 ATLASSIAN_CLIENT_SECRET=your_oauth_client_secret
 ATLASSIAN_CLOUD_ID=your_cloud_id
 ATLASSIAN_PROJECT_KEY=BPD
 
-# OR Legacy API Token Authentication
+# Legacy API Token Authentication (Optional fallback)
 JIRA_URL=https://yourcompany.atlassian.net
 JIRA_EMAIL=your-email@example.com
 JIRA_API_TOKEN=your_actual_token
