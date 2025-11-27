@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "get-token": "ts-node scripts/get-oauth-token.ts",
+    "setup-jira": "node scripts/postinstall.js",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "echo \"Tests not yet implemented\" && exit 0",

@@ -41,7 +41,10 @@ cd product-feedback-analyser
 npm install
 ```
 
-This automatically creates a `.env` file from the template.
+This automatically:
+- Creates a `.env` file from the template
+- Opens browser to get Jira API token
+- Prompts for your email and token to configure Jira MCP
 
 ### 2. Add your Anthropic API key
 
@@ -51,21 +54,9 @@ Edit `.env` and add your API key from [https://console.anthropic.com/settings/ke
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 ```
 
-### 3. Set up Jira MCP server
-
-Get a Jira API token from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens), then run:
-
-```bash
-claude mcp add jira -s local \
-  -e ATLASSIAN_SITE_NAME=boardiq \
-  -e ATLASSIAN_USER_EMAIL=your-email@example.com \
-  -e ATLASSIAN_API_TOKEN=your-token \
-  -- npx -y @aashari/mcp-server-atlassian-jira
-```
-
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
-### 4. Test Locally
+### 3. Test Locally
 
 Build and run the analyzer:
 
@@ -86,7 +77,7 @@ If everything is configured correctly, you should see:
 - Analysis progress
 - Email sent confirmation
 
-### 5. Run the Analyzer
+### 4. Run the Analyzer
 
 ```bash
 # Build and run

@@ -8,7 +8,10 @@ If a user is setting up this project for the first time, guide them through thes
 ```bash
 npm install
 ```
-This automatically creates a `.env` file from the template.
+This automatically:
+- Creates a `.env` file from the template
+- Opens browser to get Jira API token
+- Prompts for your email and token to configure Jira MCP
 
 ### 2. Add your Anthropic API key
 
@@ -17,23 +20,14 @@ Edit `.env` and add your API key from https://console.anthropic.com/settings/key
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 ```
 
-### 3. Set up Jira MCP server
-
-Get a Jira API token from https://id.atlassian.com/manage-profile/security/api-tokens, then run:
-```bash
-claude mcp add jira -s local \
-  -e ATLASSIAN_SITE_NAME=boardiq \
-  -e ATLASSIAN_USER_EMAIL=your-email@example.com \
-  -e ATLASSIAN_API_TOKEN=your-token \
-  -- npx -y @aashari/mcp-server-atlassian-jira
-```
-
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
-### 4. Test the setup
+### 3. Test the setup
 ```bash
 npm run dev
 ```
+
+If you need to reconfigure Jira, run `npm run setup-jira`.
 
 ## Communication Style
 
