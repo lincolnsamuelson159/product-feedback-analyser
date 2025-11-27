@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..');
 
@@ -16,39 +15,11 @@ if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
   console.log('   Please add your ANTHROPIC_API_KEY to .env\n');
 }
 
-// Create .mcp.json for Atlassian MCP server
-const mcpPath = path.join(rootDir, '.mcp.json');
-let needsSetup = true;
-
-if (fs.existsSync(mcpPath)) {
-  try {
-    const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
-    // Check if atlassian is configured with the correct package
-    if (mcpConfig.mcpServers && mcpConfig.mcpServers.atlassian) {
-      const args = mcpConfig.mcpServers.atlassian.args || [];
-      if (args.includes('@anthropic-ai/mcp-atlassian')) {
-        needsSetup = false;
-      }
-    }
-  } catch (e) {
-    // Invalid JSON, will recreate
-  }
-}
-
-if (needsSetup) {
-  const mcpConfig = {
-    mcpServers: {
-      atlassian: {
-        command: 'npx',
-        args: [
-          '@anthropic-ai/mcp-atlassian',
-          '--jira-url',
-          'https://boardiq.atlassian.net'
-        ]
-      }
-    }
-  };
-  fs.writeFileSync(mcpPath, JSON.stringify(mcpConfig, null, 2) + '\n');
-  console.log('✅ Created .mcp.json for Jira integration');
-  console.log('   You will be prompted for your Jira credentials when you first use it\n');
-}
+// Show Jira MCP setup instructions
+console.log('📋 To set up Jira integration, run:');
+console.log('   claude mcp add jira -s local \\');
+console.log('     -e ATLASSIAN_SITE_NAME=boardiq \\');
+console.log('     -e ATLASSIAN_USER_EMAIL=your-email@example.com \\');
+console.log('     -e ATLASSIAN_API_TOKEN=your-token \\');
+console.log('     -- npx -y @aashari/mcp-server-atlassian-jira');
+console.log('\n   Get your API token from: https://id.atlassian.com/manage-profile/security/api-tokens\n');

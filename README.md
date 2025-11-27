@@ -41,9 +41,7 @@ cd product-feedback-analyser
 npm install
 ```
 
-This automatically:
-- Creates a `.env` file from the template
-- Configures the Atlassian MCP server for Jira access (if Claude CLI is installed)
+This automatically creates a `.env` file from the template.
 
 ### 2. Add your Anthropic API key
 
@@ -53,9 +51,17 @@ Edit `.env` and add your API key from [https://console.anthropic.com/settings/ke
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 ```
 
-### 3. Enter Jira API token (first time only)
+### 3. Set up Jira MCP server
 
-When you first query Jira in Claude Code, you'll be prompted for the API token. Get yours from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+Get a Jira API token from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens), then run:
+
+```bash
+claude mcp add jira -s local \
+  -e ATLASSIAN_SITE_NAME=boardiq \
+  -e ATLASSIAN_USER_EMAIL=your-email@example.com \
+  -e ATLASSIAN_API_TOKEN=your-token \
+  -- npx -y @aashari/mcp-server-atlassian-jira
+```
 
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
@@ -208,7 +214,7 @@ This project includes MCP (Model Context Protocol) integration for querying Jira
 
 #### Setup
 
-The MCP server is automatically configured when you run `npm install`. On first use, you'll be prompted for your Jira API token.
+See step 3 in Setup Instructions above. The MCP server is configured via `claude mcp add` with your Jira credentials.
 
 #### Usage
 

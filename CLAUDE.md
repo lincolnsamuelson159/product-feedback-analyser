@@ -8,9 +8,7 @@ If a user is setting up this project for the first time, guide them through thes
 ```bash
 npm install
 ```
-This automatically:
-- Creates a `.env` file from the template
-- Creates `.mcp.json` for Jira integration
+This automatically creates a `.env` file from the template.
 
 ### 2. Add your Anthropic API key
 
@@ -19,9 +17,16 @@ Edit `.env` and add your API key from https://console.anthropic.com/settings/key
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 ```
 
-### 3. Enter Jira API token (first time only)
+### 3. Set up Jira MCP server
 
-When you first query Jira in Claude Code, you'll be prompted for the API token. Get it from https://id.atlassian.com/manage-profile/security/api-tokens
+Get a Jira API token from https://id.atlassian.com/manage-profile/security/api-tokens, then run:
+```bash
+claude mcp add jira -s local \
+  -e ATLASSIAN_SITE_NAME=boardiq \
+  -e ATLASSIAN_USER_EMAIL=your-email@example.com \
+  -e ATLASSIAN_API_TOKEN=your-token \
+  -- npx -y @aashari/mcp-server-atlassian-jira
+```
 
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
@@ -73,15 +78,13 @@ Example:
 
 ## MCP Server Usage
 
-**Use `atlassian` MCP server for all Jira queries** (e.g., `mcp__atlassian__searchJiraIssuesUsingJql`).
-
-Do NOT use the `jira` MCP server (`mcp__jira__*`) - it has authentication issues and returns empty results.
+**Use the `jira` MCP server for all Jira queries** (e.g., `mcp__jira__jira_ls_issues`).
 
 Example:
 ```
-mcp__atlassian__searchJiraIssuesUsingJql(
-  cloudId: "boardiq.atlassian.net",
-  jql: "project = BPD ORDER BY updated DESC"
+mcp__jira__jira_ls_issues(
+  jql: "project = BPD ORDER BY updated DESC",
+  limit: 20
 )
 ```
 
