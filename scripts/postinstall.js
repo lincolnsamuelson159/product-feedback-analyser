@@ -16,41 +16,39 @@ if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
   console.log('   Please add your ANTHROPIC_API_KEY to .env\n');
 }
 
-// Add MCP server if claude CLI is available
-try {
-  // Check if claude CLI exists
-  execSync('which claude', { stdio: 'ignore' });
+// Create .mcp.json for Atlassian MCP server
+const mcpPath = path.join(rootDir, '.mcp.json');
+let needsSetup = true;
 
-  // Check if .mcp.json exists and already has atlassian configured
-  const mcpPath = path.join(rootDir, '.mcp.json');
-  let needsSetup = true;
-
-  if (fs.existsSync(mcpPath)) {
-    try {
-      const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
-      // Check if atlassian is configured with the correct package (@anthropic-ai/mcp-atlassian)
-      if (mcpConfig.mcpServers && mcpConfig.mcpServers.atlassian) {
-        const args = mcpConfig.mcpServers.atlassian.args || [];
-        if (args.includes('@anthropic-ai/mcp-atlassian')) {
-          needsSetup = false;
-        }
+if (fs.existsSync(mcpPath)) {
+  try {
+    const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+    // Check if atlassian is configured with the correct package
+    if (mcpConfig.mcpServers && mcpConfig.mcpServers.atlassian) {
+      const args = mcpConfig.mcpServers.atlassian.args || [];
+      if (args.includes('@anthropic-ai/mcp-atlassian')) {
+        needsSetup = false;
       }
-    } catch (e) {
-      // Invalid JSON, will recreate
     }
+  } catch (e) {
+    // Invalid JSON, will recreate
   }
+}
 
-  if (needsSetup) {
-    console.log('🔧 Setting up Atlassian MCP server...');
-    execSync(
-      'claude mcp add atlassian -- npx @anthropic-ai/mcp-atlassian --jira-url https://boardiq.atlassian.net --jira-email lincoln.samuelson@boardintelligence.com',
-      { cwd: rootDir, stdio: 'inherit' }
-    );
-    console.log('✅ Atlassian MCP server configured');
-    console.log('   You will be prompted for the Jira API token when you first use it\n');
-  }
-} catch (e) {
-  // claude CLI not installed, skip MCP setup
-  console.log('\nℹ️  Claude CLI not found. To enable Jira integration in Claude Code, install it and run:');
-  console.log('   claude mcp add atlassian -- npx @anthropic-ai/mcp-atlassian --jira-url https://boardiq.atlassian.net --jira-email YOUR_EMAIL\n');
+if (needsSetup) {
+  const mcpConfig = {
+    mcpServers: {
+      atlassian: {
+        command: 'npx',
+        args: [
+          '@anthropic-ai/mcp-atlassian',
+          '--jira-url',
+          'https://boardiq.atlassian.net'
+        ]
+      }
+    }
+  };
+  fs.writeFileSync(mcpPath, JSON.stringify(mcpConfig, null, 2) + '\n');
+  console.log('✅ Created .mcp.json for Jira integration');
+  console.log('   You will be prompted for your Jira credentials when you first use it\n');
 }
