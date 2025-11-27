@@ -8,39 +8,24 @@ If a user is setting up this project for the first time, guide them through thes
 ```bash
 npm install
 ```
+This automatically:
+- Creates a `.env` file from the template
+- Configures the Atlassian MCP server for Jira access (if Claude CLI is installed)
 
-### 2. Set up Atlassian OAuth (Required)
+### 2. Add your Anthropic API key
 
-1. Go to https://developer.atlassian.com/console/myapps/
-2. Click **Create** → **OAuth 2.0 integration**
-3. Name it (e.g., "Product Feedback Analyzer")
-4. Under **Authorization**, add callback URL: `http://localhost:3000/callback`
-5. Under **Permissions**, add scope: `read:jira-work`
-6. Copy the **Client ID** and **Client Secret**
-
-### 3. Find Cloud ID
-
-Visit `https://boardiq.atlassian.net/_edge/tenant_info` and copy the `cloudId` value.
-
-### 4. Get refresh token
-```bash
-npm run get-token
+Edit `.env` and add your API key from https://console.anthropic.com/settings/keys:
 ```
-This opens a browser to authorize, then saves the token to `.oauth-token.json`.
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+```
 
-### 5. Create `.env` file
+### 3. Enter Jira API token (first time only)
 
-Copy `.env.example` to `.env` and fill in:
-- `ATLASSIAN_CLIENT_ID` - from step 2
-- `ATLASSIAN_CLIENT_SECRET` - from step 2
-- `ATLASSIAN_CLOUD_ID` - from step 3
-- `ATLASSIAN_PROJECT_KEY` - use `BPD`
-- `ANTHROPIC_API_KEY` - from https://console.anthropic.com/settings/keys
-- `SENDGRID_API_KEY` - from SendGrid dashboard
-- `EMAIL_FROM` - verified sender email in SendGrid
-- `EMAIL_TO` - recipient email address
+When you first query Jira in Claude Code, you'll be prompted for the API token. Get it from https://id.atlassian.com/manage-profile/security/api-tokens
 
-### 6. Test the setup
+**Note:** SendGrid settings in `.env` are optional (for email reports).
+
+### 4. Test the setup
 ```bash
 npm run dev
 ```

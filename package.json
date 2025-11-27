@@ -10,7 +10,8 @@
     "get-token": "ts-node scripts/get-oauth-token.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "echo \"Tests not yet implemented\" && exit 0"
+    "test": "echo \"Tests not yet implemented\" && exit 0",
+    "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
     "jira",

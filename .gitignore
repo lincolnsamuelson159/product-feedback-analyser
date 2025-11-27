@@ -47,3 +47,6 @@ temp/
 
 # OAuth tokens (contains sensitive refresh tokens)
 .oauth-token.json
+
+# MCP config (contains API tokens)
+.mcp.json

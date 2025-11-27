@@ -41,108 +41,23 @@ cd product-feedback-analyser
 npm install
 ```
 
-### 2. Set Up Atlassian OAuth (Required)
+This automatically:
+- Creates a `.env` file from the template
+- Configures the Atlassian MCP server for Jira access (if Claude CLI is installed)
 
-**You must complete this section first.** The analyzer uses OAuth 2.0 with rotating refresh tokens for reliable Jira access.
+### 2. Add your Anthropic API key
 
-#### Create an OAuth App
-
-1. Go to [https://developer.atlassian.com/console/myapps/](https://developer.atlassian.com/console/myapps/)
-2. Click **Create** → **OAuth 2.0 integration**
-3. Give it a name (e.g., "Product Feedback Analyzer")
-4. Under **Authorization**, add callback URL: `http://localhost:3000/callback`
-5. Under **Permissions**, add these scopes:
-   - `read:jira-work` (Jira platform → View Jira issue data)
-6. Copy your **Client ID** and **Client Secret**
-
-#### Find Your Cloud ID
-
-1. Go to your Jira site (e.g., `https://boardiq.atlassian.net`)
-2. Open browser dev tools (F12) → Console
-3. Run: `JSON.parse(document.getElementById('__NEXT_DATA__')?.textContent || '{}')?.props?.tenantContext?.cloudId`
-4. Or visit: `https://yoursite.atlassian.net/_edge/tenant_info` and copy the `cloudId` value
-
-#### Get Your Initial Refresh Token
-
-Run the OAuth setup script:
+Edit `.env` and add your API key from [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys):
 
 ```bash
-npm run get-token
-```
-
-This will:
-1. Open a browser for you to authorize the app
-2. Exchange the authorization code for tokens
-3. Save the refresh token to `.oauth-token.json`
-
-The refresh token automatically rotates on each use, so it stays fresh.
-
-#### Alternative: Jira API Token (Legacy - Optional)
-
-If you also want to use the legacy API token method as a fallback:
-
-1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
-2. Click "Create API token"
-3. Copy the token immediately
-
-**Note:** API tokens can expire or be revoked. OAuth (above) takes priority when both are configured.
-
-#### Anthropic API Key
-
-1. Go to [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-2. Create a new API key
-3. Copy the key (starts with `sk-ant-api03-`)
-
-#### SendGrid API Key
-
-1. Create a SendGrid account at [https://sendgrid.com](https://sendgrid.com) (free tier available)
-2. Go to Settings → API Keys
-3. Create a new API key with "Mail Send" permissions
-4. Copy the key (starts with `SG.`)
-5. **Important**: Verify your sender email address in SendGrid
-
-### 3. Configure Environment Variables
-
-#### For Local Development
-
-Create a `.env` file with your values:
-
-```bash
-# OAuth Authentication (Required)
-ATLASSIAN_CLIENT_ID=your_oauth_client_id
-ATLASSIAN_CLIENT_SECRET=your_oauth_client_secret
-ATLASSIAN_CLOUD_ID=your_cloud_id
-ATLASSIAN_PROJECT_KEY=BPD
-
-# Legacy API Token Authentication (Optional fallback)
-JIRA_URL=https://yourcompany.atlassian.net
-JIRA_EMAIL=your-email@example.com
-JIRA_API_TOKEN=your_actual_token
-JIRA_BOARD_ID=123
-
-# Required for both
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
-SENDGRID_API_KEY=SG.xxxxx
-EMAIL_FROM=notifications@yourdomain.com
-EMAIL_TO=your-email@example.com
 ```
 
-**Note:** If OAuth credentials are configured, they take priority over API token auth.
+### 3. Enter Jira API token (first time only)
 
-#### For GitLab CI/CD
+When you first query Jira in Claude Code, you'll be prompted for the API token. Get yours from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 
-1. Go to your GitLab project
-2. Navigate to **Settings** → **CI/CD** → **Variables**
-3. Add the following variables:
-   - `ATLASSIAN_CLIENT_ID`
-   - `ATLASSIAN_CLIENT_SECRET`
-   - `ATLASSIAN_CLOUD_ID`
-   - `ATLASSIAN_REFRESH_TOKEN` (from `.oauth-token.json`)
-   - `ATLASSIAN_PROJECT_KEY`
-   - `ANTHROPIC_API_KEY`
-   - `SENDGRID_API_KEY`
-   - `EMAIL_FROM`
-   - `EMAIL_TO`
+**Note:** SendGrid settings in `.env` are optional (for email reports).
 
 ### 4. Test Locally
 
@@ -180,23 +95,17 @@ npm run dev
 
 ```
 product-feedback/
-├── scripts/
-│   └── get-oauth-token.ts          # OAuth setup script
 ├── src/
 │   ├── jira/
-│   │   ├── client.ts               # Legacy API token client
-│   │   └── atlassian-client.ts     # OAuth-based client (recommended)
+│   │   └── client.ts               # Jira API client
 │   ├── claude/
 │   │   └── analyzer.ts             # Claude AI analysis logic
 │   ├── email/
 │   │   └── sender.ts               # SendGrid email sender
-│   ├── utils/
-│   │   └── oauth-token.ts          # OAuth token management
 │   ├── types/
 │   │   └── index.ts                # TypeScript type definitions
 │   └── index.ts                    # Main orchestration
 ├── dist/                           # Compiled JavaScript (generated)
-├── .oauth-token.json               # Local OAuth token (git-ignored)
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
@@ -240,17 +149,10 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 
 ## Troubleshooting
 
-### "Failed to refresh OAuth token"
+### "Failed to connect to Jira"
 
-- Verify your `ATLASSIAN_CLIENT_ID` and `ATLASSIAN_CLIENT_SECRET` are correct
-- Re-run `npm run get-token` to get a fresh refresh token
-- Check that your OAuth app has the `read:jira-work` scope enabled
-
-### "Failed to connect to Jira" (Legacy API Token)
-
-- Verify your Jira URL is correct (should be `https://yourcompany.atlassian.net`)
-- Check that your API token is valid and not expired
-- Ensure your email matches your Jira account
+- The shared Jira API token in `.mcp.json` may have expired
+- Contact the project owner to refresh the token
 
 ### "No issues found"
 
@@ -296,7 +198,6 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 npm run build      # Compile TypeScript to JavaScript
 npm start          # Run the compiled application
 npm run dev        # Run with ts-node (development)
-npm run get-token  # Get OAuth refresh token (one-time setup)
 npm run lint       # Lint TypeScript code
 npm run format     # Format code with Prettier
 ```
@@ -307,38 +208,11 @@ This project includes MCP (Model Context Protocol) integration for querying Jira
 
 #### Setup
 
-The MCP server is configured in `.claude.json` (in your home directory, not this project):
-
-```json
-{
-  "projects": {
-    "/Users/yourname/product-feedback": {
-      "mcpServers": {
-        "jira": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@aashari/mcp-server-atlassian-jira"],
-          "env": {
-            "ATLASSIAN_SITE_NAME": "yourcompany",
-            "ATLASSIAN_USER_EMAIL": "your-email@example.com",
-            "ATLASSIAN_API_TOKEN": "your_jira_api_token"
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-**Important**:
-- `ATLASSIAN_SITE_NAME` should be just your subdomain (e.g., "boardiq" for "boardiq.atlassian.net")
-- Use `ATLASSIAN_USER_EMAIL` (not `JIRA_EMAIL`)
-- Use `ATLASSIAN_API_TOKEN` (not `JIRA_API_TOKEN`)
-- These are the same credentials from your `.env` file
+The MCP server is automatically configured when you run `npm install`. On first use, you'll be prompted for your Jira API token.
 
 #### Usage
 
-Once configured and Claude Code is restarted, you can query Jira directly in conversations:
+Once connected, you can query Jira directly in Claude Code conversations:
 
 ```
 "Tell me about issue BPD-1028"
@@ -400,9 +274,8 @@ The MCP server provides tools for:
 
 ## Security Notes
 
-- Never commit `.env` or `.oauth-token.json` to git
+- Never commit `.env` to git
 - Use CI/CD secrets for all sensitive values
-- OAuth refresh tokens rotate automatically on each use
 - Use minimum required permissions for all API keys
 - Review access logs regularly
 
