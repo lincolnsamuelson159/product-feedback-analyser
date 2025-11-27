@@ -10,7 +10,7 @@ npm install
 ```
 This automatically:
 - Creates a `.env` file from the template
-- Configures the Atlassian MCP server for Jira access (if Claude CLI is installed)
+- Creates `.mcp.json` for Jira integration
 
 ### 2. Add your Anthropic API key
 
