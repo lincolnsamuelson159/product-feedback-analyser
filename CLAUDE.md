@@ -19,16 +19,11 @@ Edit `.env` and fill in:
 
 **Note:** SendGrid settings are optional (for email reports).
 
-### 3. Set up Jira MCP server
+### 3. Set up and test
 ```bash
 npm run setup-jira
 ```
-This configures the MCP server using your credentials from `.env`.
-
-### 4. Test the setup
-```bash
-npm run dev
-```
+This configures the MCP server and prompts to run a test.
 
 ## Communication Style
 

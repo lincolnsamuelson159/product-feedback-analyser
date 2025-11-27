@@ -52,45 +52,19 @@ Edit `.env` and fill in:
 
 **Note:** SendGrid settings are optional (for email reports).
 
-### 3. Set up Jira MCP server
+### 3. Set up and test
 
 ```bash
 npm run setup-jira
 ```
 
-This configures the MCP server for Claude Code using your credentials from `.env`.
-
-### 4. Test Locally
-
-Build and run the analyzer:
-
-```bash
-# Build TypeScript
-npm run build
-
-# Run the analyzer
-npm start
-
-# Or for development with auto-reload
-npm run dev
-```
+This configures the MCP server and prompts to run a test.
 
 If everything is configured correctly, you should see:
 - Connection verification messages
 - Issues fetched from Jira
 - Analysis progress
 - Email sent confirmation
-
-### 5. Run the Analyzer
-
-```bash
-# Build and run
-npm run build
-npm start
-
-# Or for development
-npm run dev
-```
 
 ## Project Structure
 
