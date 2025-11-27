@@ -4,26 +4,18 @@
 
 If a user is setting up this project for the first time, guide them through these steps:
 
-### 1. Install dependencies
+### 1. Install and setup
 ```bash
 npm install
 ```
-This automatically creates a `.env` file from the template.
 
-### 2. Add your credentials to `.env`
+This will:
+1. Create a `.env` file from the template
+2. Prompt you to add your credentials (links provided)
+3. Configure the Jira MCP server automatically
+4. Ask if you want to run a test
 
-Edit `.env` and fill in:
-- `ANTHROPIC_API_KEY` - from https://console.anthropic.com/settings/keys
-- `JIRA_EMAIL` - your Atlassian account email
-- `JIRA_API_TOKEN` - from https://id.atlassian.com/manage-profile/security/api-tokens
-
-**Note:** SendGrid settings are optional (for email reports).
-
-### 3. Set up and test
-```bash
-npm run setup-jira
-```
-This configures the MCP server and prompts to run a test.
+**Note:** SendGrid settings in `.env` are optional (for email reports).
 
 ## Communication Style
 
