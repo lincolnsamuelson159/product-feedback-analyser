@@ -1,0 +1,28 @@
+{
+  "name": "boardiq-jira-setup",
+  "version": "1.0.0",
+  "description": "Configure Claude Desktop to connect to Board Intelligence Jira",
+  "bin": {
+    "boardiq-jira-setup": "./bin/setup.js"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "keywords": [
+    "claude",
+    "jira",
+    "mcp",
+    "setup",
+    "claude-desktop"
+  ],
+  "author": "Board Intelligence",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/boardintelligence/product-feedback"
+  }
+}

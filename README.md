@@ -166,17 +166,27 @@ npm run lint       # Lint TypeScript code
 npm run format     # Format code with Prettier
 ```
 
-### MCP Server Integration (Claude Code)
+### MCP Server Integration
 
-This project includes MCP (Model Context Protocol) integration for querying Jira data directly within Claude Code conversations.
+This project includes MCP (Model Context Protocol) integration for querying Jira data directly within Claude conversations.
 
-#### Setup
+#### Claude Desktop Setup
+
+Run this single command:
+
+```bash
+npx boardiq-jira-setup
+```
+
+This will configure Claude Desktop to connect to Jira automatically. See [Claude Desktop Setup Guide](docs/CLAUDE_DESKTOP_SETUP.md) for details.
+
+#### Claude Code Setup
 
 See step 3 in Setup Instructions above. The MCP server is configured via `claude mcp add` with your Jira credentials.
 
 #### Usage
 
-Once connected, you can query Jira directly in Claude Code conversations:
+Once connected, you can query Jira directly in Claude conversations:
 
 ```
 "Tell me about issue BPD-1028"

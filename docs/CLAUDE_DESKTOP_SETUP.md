@@ -2,7 +2,35 @@
 
 This guide will help you connect Claude Desktop to our Jira Product Discovery board so you can ask questions about product feedback directly in Claude.
 
-## Prerequisites
+## Quick Setup (Recommended)
+
+**Download and double-click the installer for your system:**
+
+- **Mac**: [Download Setup-Jira-for-Claude.command](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.command)
+- **Windows**: [Download Setup-Jira-for-Claude.bat](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.bat)
+
+The installer will:
+1. Ask for your email
+2. Ask for your Jira API token (with a link to create one)
+3. Configure Claude Desktop automatically
+
+**After running:** Restart Claude Desktop (Cmd+Q on Mac, or quit from system tray on Windows).
+
+### Alternative: Command Line
+
+If you prefer the terminal, run:
+
+```bash
+npx boardiq-jira-setup
+```
+
+---
+
+## Manual Setup
+
+If you prefer to configure manually, follow the steps below.
+
+### Prerequisites
 
 - Claude Desktop installed ([download here](https://claude.ai/download))
 - Node.js 18+ installed ([download here](https://nodejs.org/))
@@ -10,7 +38,7 @@ This guide will help you connect Claude Desktop to our Jira Product Discovery bo
 
 ---
 
-## Step 1: Get Your Jira API Token
+### Step 1: Get Your Jira API Token
 
 1. Go to: https://id.atlassian.com/manage-profile/security/api-tokens
 2. Click **"Create API token"**
@@ -20,9 +48,9 @@ This guide will help you connect Claude Desktop to our Jira Product Discovery bo
 
 ---
 
-## Step 2: Find Your Config File
+### Step 2: Find Your Config File
 
-### On Mac
+#### On Mac
 
 1. Open Finder
 2. Press `Cmd + Shift + G` (Go to Folder)
@@ -33,7 +61,7 @@ This guide will help you connect Claude Desktop to our Jira Product Discovery bo
 4. Look for `claude_desktop_config.json`
    - If it doesn't exist, create a new file with that exact name
 
-### On Windows
+#### On Windows
 
 1. Press `Win + R` (Run dialog)
 2. Paste this path and press Enter:
@@ -45,11 +73,11 @@ This guide will help you connect Claude Desktop to our Jira Product Discovery bo
 
 ---
 
-## Step 3: Add the Configuration
+### Step 3: Add the Configuration
 
 Open `claude_desktop_config.json` in a text editor (TextEdit on Mac, Notepad on Windows).
 
-### If the file is empty or doesn't exist
+#### If the file is empty or doesn't exist
 
 Paste this entire block, replacing the placeholder values:
 
@@ -69,13 +97,13 @@ Paste this entire block, replacing the placeholder values:
 }
 ```
 
-### If the file already has content
+#### If the file already has content
 
 Add the `jira` section inside the existing `mcpServers` block. If there's no `mcpServers` block, add one.
 
 ---
 
-## Step 4: Replace the Placeholders
+### Step 4: Replace the Placeholders
 
 In the config above, replace:
 
@@ -88,7 +116,7 @@ In the config above, replace:
 
 ---
 
-## Step 5: Save and Restart
+### Step 5: Save and Restart
 
 1. Save the config file
 2. **Completely quit Claude Desktop** (not just close the window)
@@ -98,7 +126,7 @@ In the config above, replace:
 
 ---
 
-## Step 6: Test It
+### Step 6: Test It
 
 Try asking Claude:
 
