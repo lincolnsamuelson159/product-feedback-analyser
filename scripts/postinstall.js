@@ -28,8 +28,12 @@ try {
   if (fs.existsSync(mcpPath)) {
     try {
       const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+      // Check if atlassian is configured with the correct package (@anthropic-ai/mcp-atlassian)
       if (mcpConfig.mcpServers && mcpConfig.mcpServers.atlassian) {
-        needsSetup = false;
+        const args = mcpConfig.mcpServers.atlassian.args || [];
+        if (args.includes('@anthropic-ai/mcp-atlassian')) {
+          needsSetup = false;
+        }
       }
     } catch (e) {
       // Invalid JSON, will recreate
