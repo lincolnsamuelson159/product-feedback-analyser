@@ -41,22 +41,26 @@ cd product-feedback-analyser
 npm install
 ```
 
-This automatically:
-- Creates a `.env` file from the template
-- Opens browser to get Jira API token
-- Prompts for your email and token to configure Jira MCP
+This automatically creates a `.env` file from the template.
 
-### 2. Add your Anthropic API key
+### 2. Add your credentials to `.env`
 
-Edit `.env` and add your API key from [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys):
+Edit `.env` and fill in:
+- `ANTHROPIC_API_KEY` - from [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+- `JIRA_EMAIL` - your Atlassian account email
+- `JIRA_API_TOKEN` - from [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+
+**Note:** SendGrid settings are optional (for email reports).
+
+### 3. Set up Jira MCP server
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+npm run setup-jira
 ```
 
-**Note:** SendGrid settings in `.env` are optional (for email reports).
+This configures the MCP server for Claude Code using your credentials from `.env`.
 
-### 3. Test Locally
+### 4. Test Locally
 
 Build and run the analyzer:
 
@@ -77,7 +81,7 @@ If everything is configured correctly, you should see:
 - Analysis progress
 - Email sent confirmation
 
-### 4. Run the Analyzer
+### 5. Run the Analyzer
 
 ```bash
 # Build and run

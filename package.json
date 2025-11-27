@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "setup-jira": "node scripts/postinstall.js",
+    "setup-jira": "node scripts/setup-jira.js",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "echo \"Tests not yet implemented\" && exit 0",
