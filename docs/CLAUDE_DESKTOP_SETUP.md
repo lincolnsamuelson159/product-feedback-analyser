@@ -2,27 +2,58 @@
 
 This guide will help you connect Claude Desktop to our Jira Product Discovery board so you can ask questions about product feedback directly in Claude.
 
-## Quick Setup (Recommended)
+---
 
-**Download and double-click the installer for your system:**
+## New Users
 
-- **Mac**: [Download Setup-Jira-for-Claude.command](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.command)
-- **Windows**: [Download Setup-Jira-for-Claude.bat](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.bat)
+### Prerequisites
 
-The installer will:
-1. Ask for your email
-2. Ask for your Jira API token (with a link to create one)
-3. Configure Claude Desktop automatically
+Before you start, you need:
 
-**After running:** Restart Claude Desktop (Cmd+Q on Mac, or quit from system tray on Windows).
+1. **Claude Desktop** - [Download here](https://claude.ai/download) if you don't have it
+2. **Node.js** - [Download here](https://nodejs.org/) (choose the LTS version)
+3. **Jira access** - You need a Board Intelligence Jira account
 
-### Alternative: Command Line
+### Setup Steps
 
-If you prefer the terminal, run:
+1. **Download the installer for your system:**
+   - **Mac**: [Setup-Jira-for-Claude.command](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.command)
+   - **Windows**: [Setup-Jira-for-Claude.bat](../packages/boardiq-jira-setup/installers/Setup-Jira-for-Claude.bat)
+
+2. **Double-click the downloaded file** to run it
+
+3. **Enter your details when prompted:**
+   - Your Board Intelligence email
+   - Your Jira API token (the installer will show you where to create one)
+
+4. **Restart Claude Desktop:**
+   - Mac: Press `Cmd + Q` to fully quit, then reopen
+   - Windows: Right-click the system tray icon → Quit, then reopen
+
+5. **Test it!** Open Claude Desktop and ask:
+   > "Show me issues in project BPD"
+
+### Alternative: Command Line Setup
+
+If you prefer using the terminal:
 
 ```bash
 npx boardiq-jira-setup
 ```
+
+---
+
+## Existing Users
+
+If you've already set up Claude Desktop with Jira and need to update your credentials or reconfigure:
+
+1. **Run the installer again** (same steps as above) - it will update your existing configuration
+2. **Restart Claude Desktop** after running
+
+To check if your setup is working, ask Claude:
+> "What MCP tools do you have available?"
+
+You should see Jira-related tools in the response.
 
 ---
 
