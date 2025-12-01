@@ -86,99 +86,20 @@ function configureMcpForApp(appName, configPath, email, token) {
   return true;
 }
 
-function configureClaudeCode(email, token) {
-  try {
-    execSync('which claude', { stdio: 'ignore' });
-  } catch (e) {
-    return false;
-  }
-
-  // Remove existing jira MCP if present
-  try {
-    execSync('claude mcp remove jira -s local 2>/dev/null', { stdio: 'ignore' });
-  } catch (e) {
-    // ignore - might not exist
-  }
-
-  try {
-    execSync(
-      `claude mcp add jira -s local -e ATLASSIAN_SITE_NAME=boardiq -e ATLASSIAN_USER_EMAIL="${email}" -e ATLASSIAN_API_TOKEN="${token}" -- npx -y @aashari/mcp-server-atlassian-jira`,
-      { cwd: rootDir, stdio: 'inherit' }
-    );
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-async function selectAiApp() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  return new Promise((resolve) => {
-    console.log('\n🤖 Which AI app do you use?\n');
-    console.log('   1. Claude Desktop');
-    console.log('   2. Claude Code (terminal)');
-    console.log('   3. Cursor');
-    console.log('   4. Skip MCP setup\n');
-
-    rl.question('Enter 1-4: ', (answer) => {
-      rl.close();
-      const options = {
-        '1': 'Claude Desktop',
-        '2': 'Claude Code',
-        '3': 'Cursor',
-        '4': 'skip'
-      };
-      resolve(options[answer.trim()] || 'skip');
-    });
-  });
-}
-
-async function configureJiraMcp(email, token) {
-  const appChoice = await selectAiApp();
-
-  if (appChoice === 'skip') {
-    console.log('\n⏭️  Skipping MCP setup. Run npm run setup-jira later to configure.\n');
-    return true;
-  }
-
-  console.log(`\n🔧 Configuring Jira MCP for ${appChoice}...`);
-
-  if (appChoice === 'Claude Code') {
-    const success = configureClaudeCode(email, token);
-    if (success) {
-      console.log('✅ Jira MCP configured for Claude Code!');
-      return true;
-    } else {
-      console.log('❌ Claude CLI not found. Install from: https://claude.ai/code');
-      return false;
-    }
-  }
+function configureJiraMcp(email, token) {
+  console.log('\n🔧 Configuring Jira MCP for Claude Desktop...');
 
   const configPaths = getMcpConfigPaths();
-  const configPath = configPaths[appChoice];
-
-  if (!configPath) {
-    console.log('❌ Unknown app selection');
-    return false;
-  }
+  const configPath = configPaths['Claude Desktop'];
 
   try {
-    configureMcpForApp(appChoice, configPath, email, token);
-    console.log(`✅ Jira MCP configured for ${appChoice}!`);
+    configureMcpForApp('Claude Desktop', configPath, email, token);
+    console.log('✅ Jira MCP configured for Claude Desktop!');
     console.log(`   Config: ${configPath}`);
-
-    if (appChoice === 'Claude Desktop') {
-      console.log('\n⚠️  Restart Claude Desktop to load the new MCP server.\n');
-    } else if (appChoice === 'Cursor') {
-      console.log('\n⚠️  Restart Cursor to load the new MCP server.\n');
-    }
+    console.log('\n⚠️  Restart Claude Desktop to load the new MCP server.\n');
     return true;
   } catch (e) {
-    console.log(`❌ Failed to configure ${appChoice}: ${e.message}`);
+    console.log(`❌ Failed to configure Claude Desktop: ${e.message}`);
     return false;
   }
 }
@@ -298,7 +219,7 @@ async function main() {
   }
 
   // Configure Jira MCP
-  const mcpConfigured = await configureJiraMcp(env.JIRA_EMAIL, env.JIRA_API_TOKEN);
+  const mcpConfigured = configureJiraMcp(env.JIRA_EMAIL, env.JIRA_API_TOKEN);
 
   if (!mcpConfigured) {
     process.exit(0);
