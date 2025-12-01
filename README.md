@@ -29,43 +29,26 @@ Each twice-weekly report includes:
 
 ## Setup Instructions
 
-### Option 1: Have Claude do it (Claude Code users)
+### Step 1: Open Terminal
 
-Tell Claude:
-> Read the README at /path/to/product-feedback and set it up for me
+**Mac:** Press `Cmd + Space`, type "Terminal", press Enter
 
-Then follow the prompts that appear.
+**Windows:** Press `Win + R`, type "cmd", press Enter
 
-### Option 2: One-liner (copy & paste into Terminal)
+### Step 2: Paste this command
 
 ```bash
-git clone https://gitlab.com/boardiq/product-and-prototypes/product-feedback-analyser.git && cd product-feedback-analyser && npm install
+git clone https://github.com/lincolnsamuelson159/product-feedback-analyser.git && cd product-feedback-analyser && npm install
 ```
 
-This will:
-1. Create a `.env` file from the template
-2. Prompt you to add your credentials (with links to get them)
-3. Configure the Jira MCP server automatically
-4. Ask if you want to run a test
+### Step 3: Follow the prompts
 
-### 2. Get Your Credentials
+The setup will:
+- Open your browser to get API credentials
+- Open the `.env` file for you to paste them
+- Configure everything automatically
 
-You need two things:
-
-| Credential | Where to get it | Notes |
-|------------|-----------------|-------|
-| **Jira API Token** | [Create token here](https://id.atlassian.com/manage-profile/security/api-tokens) | Read-only by default. No special permissions needed. |
-| **Anthropic API Key** | [Get key here](https://console.anthropic.com/settings/keys) | For Claude AI analysis |
-
-**Note:** SendGrid settings in `.env` are optional (only needed for email reports).
-
-### Why API Token (not OAuth)?
-
-This project uses **API tokens** instead of OAuth because:
-- No scope configuration needed
-- No token refresh complexity
-- Works immediately with read-only access
-- Your token inherits your Jira permissions (if you can view issues, the tool can too)
+**Note:** You'll need a Jira API token and Anthropic API key. The setup will open the pages where you can create these.
 
 If everything is configured correctly, you should see:
 - Connection verification messages
