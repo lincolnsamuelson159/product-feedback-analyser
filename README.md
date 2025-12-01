@@ -26,19 +26,20 @@ Each twice-weekly report includes:
 
 - Node.js 20 or higher
 - npm or yarn
-- Access to:
-  - Jira board with product feedback
-  - Anthropic API (Claude)
-  - SendGrid account for email delivery
 
 ## Setup Instructions
 
-### 1. Clone and Install
+### Option 1: Have Claude do it (Claude Code users)
+
+Tell Claude:
+> Read the README at /path/to/product-feedback and set it up for me
+
+Then follow the prompts that appear.
+
+### Option 2: One-liner (copy & paste into Terminal)
 
 ```bash
-git clone https://gitlab.com/boardiq/product-and-prototypes/product-feedback-analyser.git
-cd product-feedback-analyser
-npm install
+git clone https://gitlab.com/boardiq/product-and-prototypes/product-feedback-analyser.git && cd product-feedback-analyser && npm install
 ```
 
 This will:
@@ -47,7 +48,24 @@ This will:
 3. Configure the Jira MCP server automatically
 4. Ask if you want to run a test
 
-**Note:** SendGrid settings in `.env` are optional (for email reports).
+### 2. Get Your Credentials
+
+You need two things:
+
+| Credential | Where to get it | Notes |
+|------------|-----------------|-------|
+| **Jira API Token** | [Create token here](https://id.atlassian.com/manage-profile/security/api-tokens) | Read-only by default. No special permissions needed. |
+| **Anthropic API Key** | [Get key here](https://console.anthropic.com/settings/keys) | For Claude AI analysis |
+
+**Note:** SendGrid settings in `.env` are optional (only needed for email reports).
+
+### Why API Token (not OAuth)?
+
+This project uses **API tokens** instead of OAuth because:
+- No scope configuration needed
+- No token refresh complexity
+- Works immediately with read-only access
+- Your token inherits your Jira permissions (if you can view issues, the tool can too)
 
 If everything is configured correctly, you should see:
 - Connection verification messages
@@ -115,8 +133,16 @@ ANTHROPIC_MODEL=claude-opus-4-5-20250929    # More powerful (higher cost)
 
 ### "Failed to connect to Jira"
 
-- The shared Jira API token in `.mcp.json` may have expired
-- Contact the project owner to refresh the token
+- Verify your email matches your Atlassian account exactly
+- Create a fresh API token at https://id.atlassian.com/manage-profile/security/api-tokens
+- Make sure you have access to the Jira project (can you view it in browser?)
+
+### "OAuth scope errors" or "Permission denied"
+
+This project uses **API tokens**, not OAuth. If you're seeing scope errors:
+- You may have followed OAuth setup instructions from elsewhere
+- Delete any OAuth configuration and use a simple API token instead
+- API tokens don't require scope configuration—they inherit your user permissions
 
 ### "No issues found"
 

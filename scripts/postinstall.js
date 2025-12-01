@@ -68,6 +68,47 @@ function configureJiraMcp(email, token) {
   }
 }
 
+function openInBrowser(url) {
+  const platform = process.platform;
+  try {
+    if (platform === 'darwin') {
+      execSync(`open "${url}"`, { stdio: 'ignore' });
+    } else if (platform === 'win32') {
+      execSync(`start "" "${url}"`, { stdio: 'ignore' });
+    } else {
+      execSync(`xdg-open "${url}"`, { stdio: 'ignore' });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function openInEditor(filePath) {
+  const platform = process.platform;
+  try {
+    if (platform === 'darwin') {
+      // Try VS Code first, fall back to default
+      try {
+        execSync(`code "${filePath}"`, { stdio: 'ignore' });
+      } catch (e) {
+        execSync(`open "${filePath}"`, { stdio: 'ignore' });
+      }
+    } else if (platform === 'win32') {
+      try {
+        execSync(`code "${filePath}"`, { stdio: 'ignore' });
+      } catch (e) {
+        execSync(`notepad "${filePath}"`, { stdio: 'ignore' });
+      }
+    } else {
+      execSync(`${process.env.EDITOR || 'nano'} "${filePath}"`, { stdio: 'inherit' });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function promptAndContinue() {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -75,13 +116,32 @@ async function promptAndContinue() {
   });
 
   return new Promise((resolve) => {
-    console.log('\n📝 Next steps:');
-    console.log('   1. Get credentials from:');
-    console.log('      - Anthropic: https://console.anthropic.com/settings/keys');
-    console.log('      - Jira token: https://id.atlassian.com/manage-profile/security/api-tokens');
-    console.log('   2. Edit .env and fill in your credentials\n');
+    console.log('\n📝 Setup: Add your credentials to .env\n');
 
-    rl.question('Press Enter when done editing .env (or Ctrl+C to exit): ', () => {
+    // Open credential pages in browser
+    console.log('   Opening credential pages in your browser...');
+    const jiraOpened = openInBrowser('https://id.atlassian.com/manage-profile/security/api-tokens');
+    const anthropicOpened = openInBrowser('https://console.anthropic.com/settings/keys');
+
+    if (jiraOpened && anthropicOpened) {
+      console.log('   ✓ Jira API token page');
+      console.log('   ✓ Anthropic API key page\n');
+    } else {
+      console.log('   Could not open browser. Visit manually:');
+      console.log('   - https://id.atlassian.com/manage-profile/security/api-tokens');
+      console.log('   - https://console.anthropic.com/settings/keys\n');
+    }
+
+    // Open .env in editor
+    console.log('   Opening .env in your editor...');
+    const editorOpened = openInEditor(envPath);
+    if (!editorOpened) {
+      console.log(`   Could not open editor. Edit manually: ${envPath}\n`);
+    }
+
+    console.log('\n   Add your credentials to .env, then save the file.\n');
+
+    rl.question('Press Enter when done (or Ctrl+C to exit): ', () => {
       rl.close();
       resolve();
     });
