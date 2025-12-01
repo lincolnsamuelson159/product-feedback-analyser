@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 const readline = require('readline');
 
 const rootDir = path.join(__dirname, '..');
@@ -24,31 +24,36 @@ function parseEnv(filePath) {
   return env;
 }
 
-function hasValidCredentials(env) {
+function hasValidJiraCredentials(env) {
   const email = env.JIRA_EMAIL;
   const token = env.JIRA_API_TOKEN;
-  const anthropicKey = env.ANTHROPIC_API_KEY;
 
   return email && email !== 'your-email@example.com' &&
-         token && token !== 'your-api-token' &&
-         anthropicKey && anthropicKey !== 'sk-ant-api03-xxxxx';
+         token && token !== 'your-api-token';
 }
 
-// MCP config paths for different AI apps
-function getMcpConfigPaths() {
+function getMissingCredentials(env) {
+  const missing = [];
+  if (!env.JIRA_EMAIL || env.JIRA_EMAIL === 'your-email@example.com') {
+    missing.push('JIRA_EMAIL');
+  }
+  if (!env.JIRA_API_TOKEN || env.JIRA_API_TOKEN === 'your-api-token') {
+    missing.push('JIRA_API_TOKEN');
+  }
+  return missing;
+}
+
+// MCP config path for Claude Desktop
+function getClaudeDesktopConfigPath() {
   const home = process.env.HOME || process.env.USERPROFILE;
   const platform = process.platform;
 
-  return {
-    'Claude Desktop': platform === 'darwin'
-      ? path.join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
-      : path.join(home, 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json'),
-    'Cursor': path.join(home, '.cursor', 'mcp.json'),
-    'Claude Code': null // Uses CLI, not config file
-  };
+  return platform === 'darwin'
+    ? path.join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
+    : path.join(home, 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json');
 }
 
-function configureMcpForApp(appName, configPath, email, token) {
+function configureClaudeDesktopMcp(email, token) {
   const mcpServer = {
     command: 'npx',
     args: ['-y', '@aashari/mcp-server-atlassian-jira'],
@@ -59,6 +64,7 @@ function configureMcpForApp(appName, configPath, email, token) {
     }
   };
 
+  const configPath = getClaudeDesktopConfigPath();
   let config = { mcpServers: {} };
 
   // Read existing config if it exists
@@ -67,41 +73,18 @@ function configureMcpForApp(appName, configPath, email, token) {
       config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (!config.mcpServers) config.mcpServers = {};
     } catch (e) {
-      // If parse fails, start fresh
       config = { mcpServers: {} };
     }
   } else {
-    // Create directory if it doesn't exist
     const dir = path.dirname(configPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   }
 
-  // Add/update jira server
   config.mcpServers.jira = mcpServer;
-
-  // Write config
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  return true;
-}
-
-function configureJiraMcp(email, token) {
-  console.log('\n🔧 Configuring Jira MCP for Claude Desktop...');
-
-  const configPaths = getMcpConfigPaths();
-  const configPath = configPaths['Claude Desktop'];
-
-  try {
-    configureMcpForApp('Claude Desktop', configPath, email, token);
-    console.log('✅ Jira MCP configured for Claude Desktop!');
-    console.log(`   Config: ${configPath}`);
-    console.log('\n⚠️  Restart Claude Desktop to load the new MCP server.\n');
-    return true;
-  } catch (e) {
-    console.log(`❌ Failed to configure Claude Desktop: ${e.message}`);
-    return false;
-  }
+  return configPath;
 }
 
 function openInBrowser(url) {
@@ -124,7 +107,6 @@ function openInEditor(filePath) {
   const platform = process.platform;
   try {
     if (platform === 'darwin') {
-      // Try VS Code first, fall back to default
       try {
         execSync(`code "${filePath}"`, { stdio: 'ignore' });
       } catch (e) {
@@ -145,111 +127,81 @@ function openInEditor(filePath) {
   }
 }
 
-async function promptAndContinue() {
-  const rl = readline.createInterface({
+function createReadlineInterface() {
+  return readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
+}
 
+async function waitForEnter(rl, message) {
   return new Promise((resolve) => {
-    console.log('\n📝 Setup: Add your credentials to .env\n');
-
-    // Open credential pages in browser
-    console.log('   Opening credential pages in your browser...');
-    const jiraOpened = openInBrowser('https://id.atlassian.com/manage-profile/security/api-tokens');
-    const anthropicOpened = openInBrowser('https://console.anthropic.com/settings/keys');
-
-    if (jiraOpened && anthropicOpened) {
-      console.log('   ✓ Jira API token page');
-      console.log('   ✓ Anthropic API key page\n');
-    } else {
-      console.log('   Could not open browser. Visit manually:');
-      console.log('   - https://id.atlassian.com/manage-profile/security/api-tokens');
-      console.log('   - https://console.anthropic.com/settings/keys\n');
-    }
-
-    // Open .env in editor
-    console.log('   Opening .env in your editor...');
-    const editorOpened = openInEditor(envPath);
-    if (!editorOpened) {
-      console.log(`   Could not open editor. Edit manually: ${envPath}\n`);
-    }
-
-    console.log('\n   Add your credentials to .env, then save the file.\n');
-
-    rl.question('Press Enter when done (or Ctrl+C to exit): ', () => {
-      rl.close();
-      resolve();
-    });
+    rl.question(message, () => resolve());
   });
 }
 
 async function main() {
+  console.log('\n🔧 Setting up Jira MCP for Claude Desktop...\n');
+
   // Create .env from template if it doesn't exist
   if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
     fs.copyFileSync(envExamplePath, envPath);
-    console.log('\n✅ Created .env file');
   }
 
   let env = parseEnv(envPath);
+  const rl = createReadlineInterface();
 
-  // If credentials aren't set, prompt user to edit .env
-  if (!hasValidCredentials(env)) {
-    await promptAndContinue();
-    env = parseEnv(envPath); // Re-read after user edits
-  }
+  // Loop until we have valid credentials
+  while (!hasValidJiraCredentials(env)) {
+    const missing = getMissingCredentials(env);
 
-  // Validate credentials
-  if (!env.JIRA_EMAIL || env.JIRA_EMAIL === 'your-email@example.com') {
-    console.log('\n❌ JIRA_EMAIL not set in .env');
-    console.log('   Edit .env and run: npm run setup-jira\n');
-    process.exit(0);
-  }
+    console.log('📝 You need to add your Jira credentials to continue.\n');
+    console.log('   Missing: ' + missing.join(', ') + '\n');
 
-  if (!env.JIRA_API_TOKEN || env.JIRA_API_TOKEN === 'your-api-token') {
-    console.log('\n❌ JIRA_API_TOKEN not set in .env');
-    console.log('   Edit .env and run: npm run setup-jira\n');
-    process.exit(0);
-  }
+    // Open browser to get credentials
+    console.log('   Opening Jira API token page in your browser...');
+    openInBrowser('https://id.atlassian.com/manage-profile/security/api-tokens');
 
-  if (!env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY === 'sk-ant-api03-xxxxx') {
-    console.log('\n❌ ANTHROPIC_API_KEY not set in .env');
-    console.log('   Edit .env and run: npm run setup-jira\n');
-    process.exit(0);
-  }
+    // Open .env in editor
+    console.log('   Opening .env file in your editor...\n');
+    openInEditor(envPath);
 
-  // Configure Jira MCP
-  const mcpConfigured = configureJiraMcp(env.JIRA_EMAIL, env.JIRA_API_TOKEN);
+    console.log('   In the .env file, fill in:');
+    console.log('   - JIRA_EMAIL = your Atlassian email');
+    console.log('   - JIRA_API_TOKEN = the token you create in the browser\n');
 
-  if (!mcpConfigured) {
-    process.exit(0);
-  }
+    await waitForEnter(rl, 'Press Enter after saving .env... ');
 
-  // Ask if they want to test
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
+    // Re-read credentials
+    env = parseEnv(envPath);
 
-  rl.question('\n🚀 Ready to test? (Y/n): ', (answer) => {
-    rl.close();
-
-    if (answer.toLowerCase() === 'n') {
-      console.log('\n   Run "npm run dev" when ready to test.\n');
-      process.exit(0);
+    if (!hasValidJiraCredentials(env)) {
+      const stillMissing = getMissingCredentials(env);
+      console.log('\n❌ Still missing: ' + stillMissing.join(', '));
+      console.log('   Let\'s try again.\n');
     }
+  }
 
-    console.log('\n🧪 Running npm run dev...\n');
-    const child = spawn('npm', ['run', 'dev'], {
-      cwd: rootDir,
-      stdio: 'inherit',
-      shell: true
-    });
+  rl.close();
 
-    child.on('close', (code) => {
-      process.exit(code);
-    });
-  });
+  // Configure Claude Desktop MCP
+  console.log('\n✅ Credentials found!');
+  console.log('🔧 Configuring Claude Desktop...');
+
+  try {
+    const configPath = configureClaudeDesktopMcp(env.JIRA_EMAIL, env.JIRA_API_TOKEN);
+    console.log('✅ Done!\n');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('  🎉 Setup complete!');
+    console.log('');
+    console.log('  Next steps:');
+    console.log('  1. Restart Claude Desktop (Cmd+Q, then reopen)');
+    console.log('  2. Ask Claude: "Show me recent Jira issues"');
+    console.log('═══════════════════════════════════════════════════════\n');
+  } catch (e) {
+    console.log('❌ Failed to configure Claude Desktop: ' + e.message);
+    process.exit(1);
+  }
 }
 
 main();
