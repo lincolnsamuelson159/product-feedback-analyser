@@ -60,13 +60,32 @@ Example:
 
 ## MCP Server Usage
 
-**Use the `jira` MCP server for all Jira queries** (e.g., `mcp__jira__jira_ls_issues`).
+**Use the `jira` MCP server for all Jira queries** (e.g., `mcp__jira__jira_get`).
 
-Example:
+### Searching for Issues
+
+When using `/rest/api/3/search/jql`, **always include the `fields` parameter** to get full issue data. The search endpoint returns only issue IDs by default.
+
 ```
-mcp__jira__jira_ls_issues(
-  jql: "project = BPD ORDER BY updated DESC",
-  limit: 20
+mcp__jira__jira_get(
+  path: "/rest/api/3/search/jql",
+  queryParams: {
+    "jql": "project=BPD ORDER BY created DESC",
+    "maxResults": "10",
+    "fields": "summary,status,description,created,issuetype,priority,creator,reporter,comment"
+  }
+)
+```
+
+**Never** call the search endpoint without specifying fields - this wastes API calls and tokens.
+
+### Getting a Single Issue
+
+For full issue details, use the issue endpoint directly:
+```
+mcp__jira__jira_get(
+  path: "/rest/api/3/issue/{issueKey}",
+  outputFormat: "json"
 )
 ```
 
