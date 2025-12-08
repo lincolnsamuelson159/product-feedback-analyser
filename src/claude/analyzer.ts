@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { AnthropicConfig, SimplifiedIssue, AnalysisResult } from '../types';
+import { AnthropicConfig, SimplifiedPage, AnalysisResult } from '../types';
 
 /**
- * Claude AI analyzer for product feedback
+ * Claude AI analyzer for Confluence content
  */
 export class ClaudeAnalyzer {
   private client: Anthropic;
@@ -16,33 +16,20 @@ export class ClaudeAnalyzer {
   }
 
   /**
-   * Analyze product feedback issues
-   * @param newIssues - Issues updated since last run (for Executive Summary, High Priority, Recommendations)
-   * @param allIssues - All issues for historical context (for Key Themes)
-   * @param lastRunDate - Date of last run for contextual phrasing
+   * Analyze Confluence pages
    */
-  async analyzeIssues(
-    newIssues: SimplifiedIssue[],
-    allIssues?: SimplifiedIssue[],
+  async analyzePages(
+    pages: SimplifiedPage[],
     lastRunDate?: Date | null
   ): Promise<AnalysisResult> {
-    if (newIssues.length === 0) {
+    if (pages.length === 0) {
       return this.getEmptyAnalysis();
     }
 
-    console.log(`Analyzing ${newIssues.length} new issues with Claude...`);
-    if (allIssues && allIssues.length !== newIssues.length) {
-      console.log(`Using ${allIssues.length} total issues for Key Themes analysis...`);
-    }
+    console.log(`Analyzing ${pages.length} pages with Claude...`);
 
-    // Format issues for Claude
-    const newIssuesText = this.formatIssuesForAnalysis(newIssues);
-    const allIssuesText = (allIssues && allIssues.length !== newIssues.length)
-      ? this.formatIssuesForAnalysis(allIssues)
-      : null;
-
-    // Calculate metrics
-    const metrics = this.calculateMetrics(newIssues);
+    const pagesText = this.formatPagesForAnalysis(pages);
+    const metrics = this.calculatePageMetrics(pages);
 
     try {
       const message = await this.client.messages.create({
@@ -51,7 +38,7 @@ export class ClaudeAnalyzer {
         messages: [
           {
             role: 'user',
-            content: this.buildAnalysisPrompt(newIssuesText, allIssuesText, metrics, lastRunDate)
+            content: this.buildPageAnalysisPrompt(pagesText, metrics, lastRunDate)
           }
         ]
       });
@@ -60,172 +47,112 @@ export class ClaudeAnalyzer {
         ? message.content[0].text
         : '';
 
-      return this.parseAnalysis(analysisText, metrics);
+      return this.parsePageAnalysis(analysisText, metrics);
     } catch (error) {
       console.error('Claude API Error:', error);
-      throw new Error(`Failed to analyze issues with Claude: ${error}`);
+      throw new Error(`Failed to analyze pages with Claude: ${error}`);
     }
   }
 
   /**
-   * Build the analysis prompt for Claude
+   * Build analysis prompt for Confluence pages
    */
-  private buildAnalysisPrompt(
-    newIssuesText: string,
-    allIssuesText: string | null,
+  private buildPageAnalysisPrompt(
+    pagesText: string,
     metrics: any,
     lastRunDate?: Date | null
   ): string {
     const lastRunContext = lastRunDate
-      ? `\nLast email was sent: ${lastRunDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at ${lastRunDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+      ? `\nLast analysis was: ${lastRunDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
       : '';
 
-    const themesInstruction = allIssuesText
-      ? `\n## ALL Product Feedback Issues (for Executive Summary context)
+    return `You are analyzing Confluence documentation pages. Review the following pages and provide insights.${lastRunContext}
 
-${allIssuesText}
+## Confluence Pages (${metrics.totalPages} pages)
 
-**Important for Executive Summary**: Use the ALL issues above to identify overarching themes. Reference the last run date and use comparative language like:
-- "Theme continues to be..." (if same themes persist)
-- "Theme has emerged since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if new themes)
-- "No significant new themes since ${lastRunDate?.toLocaleDateString('en-US', { weekday: 'long' })}..." (if no new themes)
-`
-      : '';
+${pagesText}
 
-    return `You are a product manager analyzing customer feedback from Jira. Review the following product feedback issues and provide a comprehensive analysis.${lastRunContext}
-
-## NEW/UPDATED Product Feedback Issues (${metrics.totalIssues} new since last run)
-
-${newIssuesText}
-${themesInstruction}
 ## Your Task
 
-Analyze these issues and provide analysis in this EXACT structure:
+Analyze these pages and provide analysis in this structure:
 
-## Executive Summary
-${allIssuesText ? 'Analyze ALL issues (both new and historical) to identify the 3 highest-level strategic themes. Use comparative language if there is history.' : 'Analyze the issues to identify key strategic themes.'}
+## Summary
+Provide a 2-3 sentence overview of the content themes and documentation state.
 
-Each bullet must:
-1. Start with a HIGH-LEVEL THEME (not a specific ticket)
-2. Explain the theme in 1-2 sentences
-3. Reference supporting tickets in brackets at the end
-
-Format:
-- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY, BPD-ZZZ]
-- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY]
-- **Theme Name**: High-level description of what this theme represents and why it matters [BPD-XXX, BPD-YYY, BPD-ZZZ]
-
-CRITICAL: Do NOT start bullets with ticket numbers. Start with the theme name.
-
-## High Priority Items
-Focus on NEW issues only. What needs immediate attention from the NEW feedback?
-**BPD-XXX: Issue Title**
-Why it's important: Revenue/customer impact
-Recommended action: Specific next steps
-
-**BPD-YYY: Issue Title**
-Why it's important: Revenue/customer impact
-Recommended action: Specific next steps
-
-**BPD-ZZZ: Issue Title**
-Why it's important: Revenue/customer impact
-Recommended action: Specific next steps
+## Highlights
+List the 3 most notable or important pages/updates:
+- **Page Title**: Why it's notable
+- **Page Title**: Why it's notable
+- **Page Title**: Why it's notable
 
 ## Recommendations
-Focus on NEW issues only. What should we do based on NEW feedback?
-1. Specific action with rationale [BPD-XXX]
-2. Specific action with rationale [BPD-YYY]
-3. Specific action with rationale [BPD-ZZZ]
+Provide 3 recommendations for documentation improvements:
+1. Specific recommendation
+2. Specific recommendation
+3. Specific recommendation
 
-## CRITICAL RULES - DO NOT DEVIATE:
-- EXACTLY 3 bullets in Executive Summary (${allIssuesText ? 'high-level themes from ALL issues' : 'from provided issues'})
-- Executive Summary bullets MUST start with **Theme Name**, NOT with [BPD-XXX]
-- EXACTLY 3 items in High Priority Items (NEW issues only)
-- EXACTLY 3 items in Recommendations (NEW issues only)
-- NO MORE, NO LESS than 3 in each section
-- Every section MUST be present
-- Focus on the TOP 3 most critical items only
-
-Please provide your analysis now following this EXACT format:`;
+Please provide your analysis now:`;
   }
 
   /**
-   * Format issues for Claude analysis
+   * Format pages for analysis
    */
-  private formatIssuesForAnalysis(issues: SimplifiedIssue[]): string {
-    return issues.map((issue, index) => {
-      let formatted = `### ${index + 1}. [${issue.key}] ${issue.summary}\n`;
-      formatted += `- **Status**: ${issue.status}\n`;
-      formatted += `- **Priority**: ${issue.priority}\n`;
-      formatted += `- **Type**: ${issue.issueType}\n`;
-      formatted += `- **Reporter**: ${issue.reporter}\n`;
-      formatted += `- **Updated**: ${new Date(issue.updated).toLocaleDateString()}\n`;
-
-      if (issue.labels.length > 0) {
-        formatted += `- **Labels**: ${issue.labels.join(', ')}\n`;
+  private formatPagesForAnalysis(pages: SimplifiedPage[]): string {
+    return pages.map((page, index) => {
+      let formatted = `### ${index + 1}. ${page.title}\n`;
+      formatted += `- **Space**: ${page.spaceKey}\n`;
+      formatted += `- **Status**: ${page.status}\n`;
+      formatted += `- **Version**: ${page.version}\n`;
+      if (page.lastModified) {
+        formatted += `- **Last Modified**: ${new Date(page.lastModified).toLocaleDateString()}\n`;
       }
-
-      formatted += `- **Description**: ${issue.description}\n`;
-
-      if (issue.recentComments.length > 0) {
-        formatted += `- **Recent Comments**:\n`;
-        issue.recentComments.forEach(comment => {
-          formatted += `  - ${comment.substring(0, 200)}\n`;
-        });
+      if (page.content) {
+        formatted += `- **Content Preview**: ${page.content.substring(0, 300)}...\n`;
       }
-
       formatted += '\n';
       return formatted;
     }).join('\n---\n\n');
   }
 
   /**
-   * Parse Claude's analysis response
+   * Parse page analysis response
    */
-  private parseAnalysis(text: string, metrics: any): AnalysisResult {
-    // Extract structured data from Claude's response
-    // This is a simple implementation - you could make it more sophisticated
-
-    const lines = text.split('\n');
+  private parsePageAnalysis(text: string, metrics: any): AnalysisResult {
     const result: AnalysisResult = {
       summary: '',
-      highPriorityItems: [],
+      highlights: [],
       recommendations: [],
       metrics
     };
 
+    const lines = text.split('\n');
     let currentSection = '';
 
     for (const line of lines) {
       const trimmed = line.trim();
 
-      // Detect sections
-      if (trimmed.toLowerCase().includes('executive summary') ||
-          trimmed.toLowerCase().includes('overview')) {
+      if (trimmed.toLowerCase().includes('summary') || trimmed.toLowerCase().includes('overview')) {
         currentSection = 'summary';
         continue;
-      } else if (trimmed.toLowerCase().includes('high priority') ||
-                 trimmed.toLowerCase().includes('immediate attention')) {
-        currentSection = 'priority';
+      } else if (trimmed.toLowerCase().includes('highlight')) {
+        currentSection = 'highlights';
         continue;
       } else if (trimmed.toLowerCase().includes('recommendation')) {
         currentSection = 'recommendations';
         continue;
       }
 
-      // Collect content based on current section
       if (trimmed.length === 0 || trimmed.startsWith('#')) continue;
 
       if (currentSection === 'summary' && trimmed.length > 0) {
         result.summary += trimmed + ' ';
-      } else if (currentSection === 'priority' && (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed))) {
-        result.highPriorityItems.push(trimmed.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, ''));
+      } else if (currentSection === 'highlights' && (trimmed.startsWith('-') || trimmed.startsWith('*'))) {
+        result.highlights.push(trimmed.replace(/^[-*]\s*/, ''));
       } else if (currentSection === 'recommendations' && (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed))) {
         result.recommendations.push(trimmed.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, ''));
       }
     }
 
-    // If parsing didn't work well, just use the full text
     if (!result.summary) {
       result.summary = text.substring(0, 500);
     }
@@ -234,55 +161,37 @@ Please provide your analysis now following this EXACT format:`;
   }
 
   /**
-   * Calculate metrics from issues
+   * Calculate metrics from pages
    */
-  private calculateMetrics(issues: SimplifiedIssue[]): any {
+  private calculatePageMetrics(pages: SimplifiedPage[]): any {
     const now = new Date();
-    const fourDaysAgo = new Date(now.getTime() - (4 * 24 * 60 * 60 * 1000));
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
 
-    const newIssues = issues.filter(issue =>
-      new Date(issue.created) > fourDaysAgo
+    const recentlyUpdated = pages.filter(page =>
+      page.lastModified && new Date(page.lastModified) > sevenDaysAgo
     ).length;
 
-    const updatedIssues = issues.filter(issue =>
-      new Date(issue.updated) > fourDaysAgo &&
-      new Date(issue.created) <= fourDaysAgo
-    ).length;
-
-    // Count label frequency
-    const labelCounts: Record<string, number> = {};
-    issues.forEach(issue => {
-      issue.labels.forEach(label => {
-        labelCounts[label] = (labelCounts[label] || 0) + 1;
-      });
-    });
-
-    const commonLabels = Object.entries(labelCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([label]) => label);
+    const spaces = [...new Set(pages.map(p => p.spaceKey))];
 
     return {
-      totalIssues: issues.length,
-      newIssues,
-      updatedIssues,
-      commonLabels
+      totalPages: pages.length,
+      recentlyUpdated,
+      spaces
     };
   }
 
   /**
-   * Get empty analysis for when there are no issues
+   * Get empty analysis
    */
   private getEmptyAnalysis(): AnalysisResult {
     return {
-      summary: 'No product feedback issues found in the specified time period.',
-      highPriorityItems: [],
-      recommendations: ['Continue monitoring for new feedback'],
+      summary: 'No Confluence pages found.',
+      highlights: [],
+      recommendations: ['Add documentation to get started'],
       metrics: {
-        totalIssues: 0,
-        newIssues: 0,
-        updatedIssues: 0,
-        commonLabels: []
+        totalPages: 0,
+        recentlyUpdated: 0,
+        spaces: []
       }
     };
   }

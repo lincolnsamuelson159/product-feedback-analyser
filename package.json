@@ -1,24 +1,24 @@
 {
-  "name": "product-feedback-ai",
+  "name": "confluence-analyzer",
   "version": "1.0.0",
-  "description": "Automated AI-powered product feedback summarization from Jira",
+  "description": "Automated AI-powered Confluence content analysis",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "setup-jira": "node scripts/setup-jira.js",
+    "setup-confluence": "node scripts/setup-confluence.js",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "echo \"Tests not yet implemented\" && exit 0",
     "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
-    "jira",
+    "confluence",
     "ai",
     "claude",
     "automation",
-    "feedback"
+    "analysis"
   ],
   "author": "",
   "license": "MIT",

@@ -1,10 +1,9 @@
 import dotenv from 'dotenv';
-import { AtlassianClient } from './jira/atlassian-client';
+import { ConfluenceClient } from './confluence/client';
 import { ClaudeAnalyzer } from './claude/analyzer';
 import { EmailSender } from './email/sender';
 import { Config } from './types';
 import { getLastRunTimestamp, saveLastRunTimestamp, getLastRunDescription } from './utils/last-run';
-import { getOAuthConfig, saveRefreshToken, hasOAuthConfig } from './utils/oauth-token';
 
 // Load environment variables
 dotenv.config();
@@ -13,68 +12,43 @@ dotenv.config();
  * Load configuration from environment variables
  */
 function loadConfig(): Config {
-  // Check for OAuth configuration (new method)
-  if (hasOAuthConfig()) {
-    console.log('🔐 Using Atlassian OAuth authentication');
-    const requiredEnvVars = [
-      'ATLASSIAN_CLIENT_ID',
-      'ATLASSIAN_CLIENT_SECRET',
-      'ATLASSIAN_CLOUD_ID',
-      'ANTHROPIC_API_KEY',
-      'SENDGRID_API_KEY',
-      'EMAIL_FROM',
-      'EMAIL_TO'
-    ];
+  const requiredEnvVars = [
+    'CONFLUENCE_URL',
+    'CONFLUENCE_EMAIL',
+    'CONFLUENCE_API_TOKEN',
+    'ANTHROPIC_API_KEY'
+  ];
 
-    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
-    if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
-  } else {
-    // Fall back to legacy API token method
-    console.log('🔑 Using legacy Jira API token authentication');
-    const requiredEnvVars = [
-      'JIRA_URL',
-      'JIRA_EMAIL',
-      'JIRA_API_TOKEN',
-      'JIRA_BOARD_ID',
-      'ANTHROPIC_API_KEY',
-      'SENDGRID_API_KEY',
-      'EMAIL_FROM',
-      'EMAIL_TO'
-    ];
-
-    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
-    if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
+  const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
   return {
-    jira: {
-      url: process.env.JIRA_URL || 'https://boardiq.atlassian.net',
-      email: process.env.JIRA_EMAIL || '',
-      apiToken: process.env.JIRA_API_TOKEN || '',
-      boardId: process.env.JIRA_BOARD_ID || 'BPD'
+    confluence: {
+      url: process.env.CONFLUENCE_URL || 'https://boardiq.atlassian.net',
+      email: process.env.CONFLUENCE_EMAIL || '',
+      apiToken: process.env.CONFLUENCE_API_TOKEN || '',
+      spaceKey: process.env.CONFLUENCE_SPACE_KEY || ''
     },
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY!,
       model: process.env.ANTHROPIC_MODEL
     },
     email: {
-      apiKey: process.env.SENDGRID_API_KEY!,
-      from: process.env.EMAIL_FROM!,
-      to: process.env.EMAIL_TO!,
-      jiraUrl: process.env.JIRA_URL || 'https://boardiq.atlassian.net'
+      apiKey: process.env.SENDGRID_API_KEY || '',
+      from: process.env.EMAIL_FROM || '',
+      to: process.env.EMAIL_TO || '',
+      confluenceUrl: process.env.CONFLUENCE_URL || 'https://boardiq.atlassian.net'
     }
   };
 }
 
 /**
- * Main function to run the product feedback analysis
+ * Main function to run the Confluence content analysis
  */
 async function main() {
-  console.log('🚀 Starting Product Feedback AI Analyzer...\n');
+  console.log('🚀 Starting Confluence Analyzer...\n');
 
   const runStartTime = new Date();
 
@@ -85,9 +59,9 @@ async function main() {
 
     if (lastRun) {
       console.log(`📅 Last run: ${lastRun.toLocaleString()} (${lastRunDesc})`);
-      console.log(`   Will analyze issues updated since then\n`);
+      console.log(`   Will analyze pages updated since then\n`);
     } else {
-      console.log('📅 First run - will analyze recent issues\n');
+      console.log('📅 First run - will analyze recent pages\n');
     }
 
     // Load configuration
@@ -97,103 +71,63 @@ async function main() {
 
     // Initialize clients
     console.log('🔧 Initializing clients...');
-
-    let jiraClient: AtlassianClient;
-
-    // Use OAuth if configured, otherwise fall back to legacy
-    if (hasOAuthConfig()) {
-      const oauthConfig = getOAuthConfig();
-      jiraClient = new AtlassianClient(oauthConfig);
-
-      // Refresh the access token (this also rotates the refresh token)
-      await jiraClient.refreshAccessToken();
-
-      // Save the new refresh token for the next run
-      const newRefreshToken = jiraClient.getNewRefreshToken();
-      if (newRefreshToken) {
-        saveRefreshToken(newRefreshToken);
-      }
-    } else {
-      // Legacy mode - import and use old client
-      const { JiraClient } = await import('./jira/client');
-      const legacyClient = new JiraClient(config.jira);
-      // Cast to AtlassianClient interface (they have the same methods)
-      jiraClient = legacyClient as unknown as AtlassianClient;
-    }
-
+    const confluenceClient = new ConfluenceClient(config.confluence);
     const claudeAnalyzer = new ClaudeAnalyzer(config.anthropic);
-    const emailSender = new EmailSender(config.email);
     console.log('✅ Clients initialized\n');
 
-    // Test connections
-    console.log('🔌 Testing connections...');
-    // Skip /myself endpoint test as it may not have permissions
-    // const jiraConnected = await jiraClient.testConnection();
-    // if (!jiraConnected) {
-    //   throw new Error('Failed to connect to Jira. Please check your credentials.');
-    // }
-
-    const emailConfigValid = await emailSender.testConnection();
-    if (!emailConfigValid) {
-      throw new Error('Failed to validate SendGrid configuration.');
+    // Test connection
+    console.log('🔌 Testing Confluence connection...');
+    const connected = await confluenceClient.testConnection();
+    if (!connected) {
+      throw new Error('Failed to connect to Confluence. Please check your credentials.');
     }
-    console.log('✅ All connections verified\n');
+    console.log('✅ Connection verified\n');
 
-    // Fetch issues from Jira
-    console.log('📥 Fetching product feedback from Jira...');
-    const newIssues = await jiraClient.fetchBoardIssues(lastRun);
+    // Fetch pages from Confluence
+    console.log('📥 Fetching pages from Confluence...');
+    const pages = config.confluence.spaceKey
+      ? await confluenceClient.fetchSpacePages()
+      : await confluenceClient.fetchRecentPages();
 
-    if (newIssues.length === 0) {
-      console.log('⚠️  No new or updated issues since last run.');
-      console.log('Skipping analysis and email.');
-      console.log('💡 Tip: Issues are considered "new" if created or updated since last run.\n');
+    if (pages.length === 0) {
+      console.log('⚠️  No pages found.');
       return;
     }
 
-    console.log(`✅ Fetched ${newIssues.length} new/updated issues\n`);
+    console.log(`✅ Fetched ${pages.length} pages\n`);
 
-    // Fetch ALL issues for Key Themes context (only if we have a lastRun date)
-    let allIssues = newIssues;
-    if (lastRun) {
-      console.log('📥 Fetching all historical issues for Key Themes analysis...');
-      allIssues = await jiraClient.fetchAllBoardIssues();
-      console.log(`✅ Fetched ${allIssues.length} total issues\n`);
-    }
-
-    // Simplify issues for analysis
-    console.log('🔄 Processing issues...');
-    const simplifiedNewIssues = jiraClient.simplifyIssues(newIssues);
-    const simplifiedAllIssues = lastRun ? jiraClient.simplifyIssues(allIssues) : undefined;
-    console.log('✅ Issues processed\n');
+    // Simplify pages for analysis
+    console.log('🔄 Processing pages...');
+    const simplifiedPages = confluenceClient.simplifyPages(pages);
+    console.log('✅ Pages processed\n');
 
     // Analyze with Claude
-    console.log('🤖 Analyzing feedback with Claude AI...');
-    const analysis = await claudeAnalyzer.analyzeIssues(
-      simplifiedNewIssues,
-      simplifiedAllIssues,
-      lastRun
-    );
+    console.log('🤖 Analyzing content with Claude AI...');
+    const analysis = await claudeAnalyzer.analyzePages(simplifiedPages, lastRun);
     console.log('✅ Analysis complete\n');
 
     // Display summary to console
     console.log('📊 Analysis Summary:');
     console.log('─'.repeat(50));
-    console.log(`Total New/Updated Issues: ${analysis.metrics.totalIssues}`);
-    console.log(`New Issues: ${analysis.metrics.newIssues}`);
-    console.log(`Updated Issues: ${analysis.metrics.updatedIssues}`);
-    console.log(`\nExecutive Summary:`);
+    console.log(`Total Pages: ${analysis.metrics.totalPages}`);
+    console.log(`Recently Updated: ${analysis.metrics.recentlyUpdated}`);
+    console.log(`Spaces: ${analysis.metrics.spaces.join(', ')}`);
+    console.log(`\nSummary:`);
     console.log(analysis.summary);
     console.log('─'.repeat(50) + '\n');
 
-    // Send email report
-    console.log('📧 Sending email report...');
-    await emailSender.sendReport(analysis, simplifiedNewIssues);
-    console.log('✅ Email sent successfully\n');
+    // Send email report if configured
+    if (config.email.apiKey && config.email.from && config.email.to) {
+      console.log('📧 Sending email report...');
+      const emailSender = new EmailSender(config.email);
+      await emailSender.sendConfluenceReport(analysis, simplifiedPages);
+      console.log('✅ Email sent successfully\n');
+    }
 
     // Save the run timestamp for next time
     saveLastRunTimestamp(runStartTime);
 
-    console.log('🎉 Product Feedback Analysis completed successfully!');
+    console.log('🎉 Confluence Analysis completed successfully!');
   } catch (error) {
     console.error('❌ Error occurred during execution:');
     console.error(error);

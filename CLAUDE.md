@@ -1,4 +1,4 @@
-# Claude Instructions for Product Feedback Analyzer
+# Claude Instructions for Confluence Analyzer
 
 ## First-Time Setup
 
@@ -12,85 +12,63 @@ npm install
 This will:
 1. Create a `.env` file from the template
 2. Prompt you to add your credentials (links provided)
-3. Configure the Jira MCP server automatically
-4. Ask if you want to run a test
+3. Configure the Confluence MCP server automatically
 
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
 ## Communication Style
 
-**Do not include recommendations in responses.** When answering questions about Jira data, product features, or analysis:
+**Do not include recommendations in responses.** When answering questions about Confluence data or analysis:
 - Provide facts and data only
 - Skip obvious next steps or recommendations
 - Avoid phrases like "you should", "we recommend", "consider", etc.
 - If there are unknowns, simply state them without suggesting how to resolve them
 
-Example of what NOT to do:
-> "The ARR is £150,000. **Recommendation: Clarify with Schroders if this is required.**"
-
-Example of what TO do:
-> "The ARR is £150,000. Whether this feature is required for the deal is marked as TBC."
-
 ## Project Context
 
-This is an automated product feedback analyzer that:
-- Fetches issues from Jira Product Discovery (project: BPD)
-- Uses Claude AI to analyze trends and priorities
-- Sends twice-weekly email reports via SendGrid
-- Uses MCP server for interactive Jira queries in Claude Code
-
-## Multi-Client Insight Formatting
-
-When analyzing issues with multiple client insights (multiple clients mentioned in comments), format as bullet points with indented sub-bullets:
-
-**Client Name** (Contact names)
-- **Problem**: Description of the problem/feedback
-- **ARR Impact**: Value or "Not specified"
-- **Required for deal?**: Answer or "Not specified"
-- **Timeline**: Timeline or "Not specified"
-- **Other clients affected?**: Answer or "Not specified"
-
-Example:
-**Keller Group** (Silvana CoSec, Jamie D, Asst CoSec)
-- **Problem**: Struggle with s.172 for annual reports. Want to see stakeholder perspectives across all board packs.
-- **ARR Impact**: Not specified
-- **Required for deal?**: Client more likely to buy Insight Driver
-- **Timeline**: n/a
-- **Other clients affected?**: No
+This is a Confluence content analyzer that:
+- Fetches pages from Confluence Cloud
+- Uses Claude AI to analyze content
+- Sends reports via SendGrid (optional)
+- Uses MCP server for interactive Confluence queries in Claude Code
 
 ## MCP Server Usage
 
-**Use the `jira` MCP server for all Jira queries** (e.g., `mcp__jira__jira_get`).
+**Use the `confluence` MCP server for all Confluence queries.**
 
-### Searching for Issues
+The MCP server (`@aashari/mcp-server-atlassian-confluence`) provides these tools:
 
-When using `/rest/api/3/search/jql`, **always include the `fields` parameter** to get full issue data. The search endpoint returns only issue IDs by default.
-
+### List Spaces
 ```
-mcp__jira__jira_get(
-  path: "/rest/api/3/search/jql",
-  queryParams: {
-    "jql": "project=BPD ORDER BY created DESC",
-    "maxResults": "10",
-    "fields": "summary,status,description,created,issuetype,priority,creator,reporter,comment"
-  }
-)
+confluence_list_spaces()
 ```
 
-**Never** call the search endpoint without specifying fields - this wastes API calls and tokens.
-
-### Getting a Single Issue
-
-For full issue details, use the issue endpoint directly:
+### List Pages in a Space
 ```
-mcp__jira__jira_get(
-  path: "/rest/api/3/issue/{issueKey}",
-  outputFormat: "json"
-)
+confluence_list_pages(spaceKey: "SPACE")
 ```
+
+### Get Page Content
+```
+confluence_get_page(pageId: "123456")
+```
+
+### Search with CQL
+```
+confluence_search(cql: "space=SPACE AND type=page")
+```
+
+### Common CQL Queries
+
+- All pages in a space: `space=SPACE AND type=page`
+- Recently modified: `lastModified >= now("-7d")`
+- By title: `title ~ "keyword"`
+- By content: `text ~ "search term"`
+- Combined: `space=SPACE AND type=page AND lastModified >= now("-30d")`
 
 ## Important Notes
 
-- Jira Product Discovery "Insights" are NOT accessible via API - only through the web UI
-- MCP server can access: descriptions, comments, custom fields (Product Area, Page/Feature/Theme)
+- The MCP server uses the Confluence Cloud REST API v2
+- Authentication uses Atlassian API tokens (same as Jira)
+- CQL (Confluence Query Language) is used for searching
 - The automated email reports SHOULD include recommendations - this instruction only applies to conversational responses

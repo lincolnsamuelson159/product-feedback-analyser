@@ -24,9 +24,9 @@ function parseEnv(filePath) {
   return env;
 }
 
-function hasValidJiraCredentials(env) {
-  const email = env.JIRA_EMAIL;
-  const token = env.JIRA_API_TOKEN;
+function hasValidConfluenceCredentials(env) {
+  const email = env.CONFLUENCE_EMAIL;
+  const token = env.CONFLUENCE_API_TOKEN;
 
   return email && email !== 'your-email@example.com' &&
          token && token !== 'your-api-token';
@@ -34,11 +34,11 @@ function hasValidJiraCredentials(env) {
 
 function getMissingCredentials(env) {
   const missing = [];
-  if (!env.JIRA_EMAIL || env.JIRA_EMAIL === 'your-email@example.com') {
-    missing.push('JIRA_EMAIL');
+  if (!env.CONFLUENCE_EMAIL || env.CONFLUENCE_EMAIL === 'your-email@example.com') {
+    missing.push('CONFLUENCE_EMAIL');
   }
-  if (!env.JIRA_API_TOKEN || env.JIRA_API_TOKEN === 'your-api-token') {
-    missing.push('JIRA_API_TOKEN');
+  if (!env.CONFLUENCE_API_TOKEN || env.CONFLUENCE_API_TOKEN === 'your-api-token') {
+    missing.push('CONFLUENCE_API_TOKEN');
   }
   return missing;
 }
@@ -56,7 +56,7 @@ function getClaudeDesktopConfigPath() {
 function configureClaudeDesktopMcp(email, token) {
   const mcpServer = {
     command: 'npx',
-    args: ['-y', '@aashari/mcp-server-atlassian-jira'],
+    args: ['-y', '@aashari/mcp-server-atlassian-confluence'],
     env: {
       ATLASSIAN_SITE_NAME: 'boardiq',
       ATLASSIAN_USER_EMAIL: email,
@@ -82,7 +82,7 @@ function configureClaudeDesktopMcp(email, token) {
     }
   }
 
-  config.mcpServers.jira = mcpServer;
+  config.mcpServers.confluence = mcpServer;
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
   return configPath;
 }
@@ -141,7 +141,7 @@ async function waitForEnter(rl, message) {
 }
 
 async function main() {
-  console.log('\n🔧 Setting up Jira MCP for Claude Desktop...\n');
+  console.log('\n🔧 Setting up Confluence MCP for Claude Desktop...\n');
 
   // Create .env from template if it doesn't exist
   if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
@@ -152,14 +152,14 @@ async function main() {
   const rl = createReadlineInterface();
 
   // Loop until we have valid credentials
-  while (!hasValidJiraCredentials(env)) {
+  while (!hasValidConfluenceCredentials(env)) {
     const missing = getMissingCredentials(env);
 
-    console.log('📝 You need to add your Jira credentials to continue.\n');
+    console.log('📝 You need to add your Confluence credentials to continue.\n');
     console.log('   Missing: ' + missing.join(', ') + '\n');
 
     // Open browser to get credentials
-    console.log('   Opening Jira API token page in your browser...');
+    console.log('   Opening Atlassian API token page in your browser...');
     openInBrowser('https://id.atlassian.com/manage-profile/security/api-tokens');
 
     // Open .env in editor
@@ -167,15 +167,15 @@ async function main() {
     openInEditor(envPath);
 
     console.log('   In the .env file, fill in:');
-    console.log('   - JIRA_EMAIL = your Atlassian email');
-    console.log('   - JIRA_API_TOKEN = the token you create in the browser\n');
+    console.log('   - CONFLUENCE_EMAIL = your Atlassian email');
+    console.log('   - CONFLUENCE_API_TOKEN = the token you create in the browser\n');
 
     await waitForEnter(rl, 'Press Enter after saving .env... ');
 
     // Re-read credentials
     env = parseEnv(envPath);
 
-    if (!hasValidJiraCredentials(env)) {
+    if (!hasValidConfluenceCredentials(env)) {
       const stillMissing = getMissingCredentials(env);
       console.log('\n❌ Still missing: ' + stillMissing.join(', '));
       console.log('   Let\'s try again.\n');
@@ -189,14 +189,14 @@ async function main() {
   console.log('🔧 Configuring Claude Desktop...');
 
   try {
-    const configPath = configureClaudeDesktopMcp(env.JIRA_EMAIL, env.JIRA_API_TOKEN);
+    const configPath = configureClaudeDesktopMcp(env.CONFLUENCE_EMAIL, env.CONFLUENCE_API_TOKEN);
     console.log('✅ Done!\n');
     console.log('═══════════════════════════════════════════════════════');
     console.log('  🎉 Setup complete!');
     console.log('');
     console.log('  Next steps:');
     console.log('  1. Restart Claude Desktop (Cmd+Q, then reopen)');
-    console.log('  2. Ask Claude: "Show me recent Jira issues"');
+    console.log('  2. Ask Claude: "Show me Confluence spaces"');
     console.log('═══════════════════════════════════════════════════════\n');
   } catch (e) {
     console.log('❌ Failed to configure Claude Desktop: ' + e.message);

@@ -2,19 +2,19 @@
  * Configuration for the application
  */
 export interface Config {
-  jira: JiraConfig;
+  confluence: ConfluenceConfig;
   anthropic: AnthropicConfig;
   email: EmailConfig;
 }
 
 /**
- * Jira configuration
+ * Confluence configuration
  */
-export interface JiraConfig {
+export interface ConfluenceConfig {
   url: string;
   email: string;
   apiToken: string;
-  boardId: string;
+  spaceKey: string;
 }
 
 /**
@@ -32,75 +32,54 @@ export interface EmailConfig {
   apiKey: string;
   from: string;
   to: string;
-  jiraUrl: string;
+  confluenceUrl: string;
 }
 
 /**
- * Jira issue from API
+ * Confluence page from API
  */
-export interface JiraIssue {
+export interface ConfluencePage {
   id: string;
-  key: string;
-  fields: {
-    summary: string;
-    description?: string | null;
-    status: {
-      name: string;
-      statusCategory?: {
-        name: string;
-      };
+  title: string;
+  status: string;
+  spaceId?: string;
+  authorId?: string;
+  createdAt?: string;
+  version?: {
+    number: number;
+    createdAt?: string;
+    authorId?: string;
+  };
+  body?: {
+    storage?: {
+      value: string;
+      representation: string;
     };
-    assignee?: {
-      displayName: string;
-      emailAddress?: string;
-    } | null;
-    reporter?: {
-      displayName: string;
-      emailAddress?: string;
-    } | null;
-    created: string;
-    updated: string;
-    priority?: {
-      name: string;
-    } | null;
-    issuetype: {
-      name: string;
-    };
-    labels?: string[];
-    comment?: {
-      comments: Array<{
-        body: string;
-        author: {
-          displayName: string;
-        };
-        created: string;
-      }>;
-    };
-    // Custom fields - these may have different field IDs in your Jira instance
-    customfield_10037?: any; // Product Area (example field ID)
-    customfield_10038?: any; // Page/Feature/Theme (example field ID)
-    [key: string]: any; // Allow any custom fields
+  };
+  _expandable?: {
+    space?: string;
+    children?: string;
+    ancestors?: string;
+  };
+  _links?: {
+    webui?: string;
+    self?: string;
   };
 }
 
 /**
- * Simplified issue for analysis
+ * Simplified page for analysis
  */
-export interface SimplifiedIssue {
-  key: string;
-  summary: string;
-  description: string;
+export interface SimplifiedPage {
+  id: string;
+  title: string;
+  spaceKey: string;
   status: string;
-  assignee: string;
-  reporter: string;
-  created: string;
-  updated: string;
-  priority: string;
-  issueType: string;
-  labels: string[];
-  recentComments: string[];
-  productArea?: string;
-  pageFeatureTheme?: string;
+  createdAt?: string;
+  version: number;
+  authorId?: string;
+  lastModified?: string;
+  content?: string;
 }
 
 /**
@@ -108,13 +87,12 @@ export interface SimplifiedIssue {
  */
 export interface AnalysisResult {
   summary: string;
-  highPriorityItems: string[];
+  highlights: string[];
   recommendations: string[];
   metrics: {
-    totalIssues: number;
-    newIssues: number;
-    updatedIssues: number;
-    commonLabels: string[];
+    totalPages: number;
+    recentlyUpdated: number;
+    spaces: string[];
   };
 }
 
