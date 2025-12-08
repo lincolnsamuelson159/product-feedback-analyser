@@ -53,12 +53,17 @@ function getClaudeDesktopConfigPath() {
     : path.join(home, 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json');
 }
 
-function configureClaudeDesktopMcp(email, token) {
+function configureClaudeDesktopMcp(email, token, confluenceUrl) {
+  // Extract site name from URL (e.g., "https://boardiq.atlassian.net" -> "boardiq")
+  const siteName = confluenceUrl
+    .replace(/^https?:\/\//, '')
+    .replace(/\.atlassian\.net.*$/, '');
+
   const mcpServer = {
     command: 'npx',
     args: ['-y', '@aashari/mcp-server-atlassian-confluence'],
     env: {
-      ATLASSIAN_SITE_NAME: 'boardiq',
+      ATLASSIAN_SITE_NAME: siteName,
       ATLASSIAN_USER_EMAIL: email,
       ATLASSIAN_API_TOKEN: token
     }
@@ -189,7 +194,8 @@ async function main() {
   console.log('🔧 Configuring Claude Desktop...');
 
   try {
-    const configPath = configureClaudeDesktopMcp(env.CONFLUENCE_EMAIL, env.CONFLUENCE_API_TOKEN);
+    const confluenceUrl = env.CONFLUENCE_URL || 'https://boardiq.atlassian.net';
+    const configPath = configureClaudeDesktopMcp(env.CONFLUENCE_EMAIL, env.CONFLUENCE_API_TOKEN, confluenceUrl);
     console.log('✅ Done!\n');
     console.log('═══════════════════════════════════════════════════════');
     console.log('  🎉 Setup complete!');
