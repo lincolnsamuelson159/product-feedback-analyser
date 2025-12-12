@@ -1,0 +1,51 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "customer-insights-mcp"
+main = "src/index.ts"
+compatibility_date = "2025-01-13"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers Logs
+# Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+[observability]
+enabled = true
+
+# KV Namespace for OAuth token storage
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "c3bfd599eaaa4e998ac2af539ede028d"
+
+# Durable Object for MCP Agent
+[[durable_objects.bindings]]
+name = "MCP_OBJECT"
+class_name = "CustomerInsightsMCP"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CustomerInsightsMCP"]
+
+# Environment variables (set via wrangler secret put <KEY>)
+# Required secrets:
+#   GOOGLE_CLIENT_ID - Google OAuth client ID
+#   GOOGLE_CLIENT_SECRET - Google OAuth client secret
+#   COOKIE_ENCRYPTION_KEY - Random string for encrypting cookies (generate with: openssl rand -hex 32)
+#   JIRA_EMAIL - Service account email for Jira
+#   JIRA_API_TOKEN - Jira API token
+#   SALESFORCE_CLIENT_ID - Salesforce Connected App client ID
+#   SALESFORCE_CLIENT_SECRET - Salesforce Connected App client secret
+#   SALESFORCE_INSTANCE_URL - e.g., https://yourorg.my.salesforce.com
+#   GONG_ACCESS_KEY - Gong API access key
+#   GONG_ACCESS_SECRET - Gong API access secret
+#   CONFLUENCE_EMAIL - Service account email for Confluence
+#   CONFLUENCE_API_TOKEN - Confluence API token
+#   MS365_CLIENT_ID - Azure AD App client ID
+#   MS365_CLIENT_SECRET - Azure AD App client secret
+#   MS365_TENANT_ID - Azure AD tenant ID
+#   MS365_REFRESH_TOKEN - Microsoft Graph refresh token
+
+[vars]
+# Your Google Workspace domain to restrict access
+HOSTED_DOMAIN = "boardintelligence.com"
+# Jira instance
+JIRA_SITE = "boardiq.atlassian.net"
+# Confluence instance (same as Jira for Atlassian Cloud)
+CONFLUENCE_SITE = "boardiq.atlassian.net"

@@ -48,5 +48,8 @@ temp/
 # OAuth tokens (contains sensitive refresh tokens)
 .oauth-token.json
 
+# Salesforce auth URL temp file
+.sf-auth-url.txt
+
 # MCP config (contains API tokens)
 .mcp.json

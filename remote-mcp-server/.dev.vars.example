@@ -1,0 +1,23 @@
+# Copy this file to .dev.vars and fill in your values
+# These are used for local development only
+
+# Google OAuth (create at https://console.cloud.google.com/apis/credentials)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Cookie encryption key (generate with: openssl rand -hex 32)
+COOKIE_ENCRYPTION_KEY=your-random-hex-string
+
+# Jira (get token from https://id.atlassian.com/manage-profile/security/api-tokens)
+JIRA_EMAIL=your-email@company.com
+JIRA_API_TOKEN=your-jira-api-token
+
+# Salesforce Connected App
+SALESFORCE_CLIENT_ID=your-salesforce-client-id
+SALESFORCE_CLIENT_SECRET=your-salesforce-client-secret
+SALESFORCE_INSTANCE_URL=https://yourorg.my.salesforce.com
+SALESFORCE_REFRESH_TOKEN=your-refresh-token
+
+# Gong (get from Settings > Ecosystem > API)
+GONG_ACCESS_KEY=your-gong-access-key
+GONG_ACCESS_SECRET=your-gong-access-secret

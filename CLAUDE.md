@@ -11,9 +11,17 @@ npm install
 
 This will:
 1. Create a `.env` file from the template
-2. Prompt you to add your credentials (links provided)
-3. Configure the Jira MCP server automatically
-4. Ask if you want to run a test
+2. Prompt you to add your Jira credentials (required)
+3. Optionally set up Salesforce integration (for CRM data)
+4. Optionally set up Gong integration (for call transcripts)
+5. Configure Claude Desktop MCP servers automatically
+
+### 2. For Claude Code CLI users (optional)
+After `npm install`, run:
+```bash
+npm run setup-cli
+```
+This configures the MCP servers for the Claude Code CLI instead of Claude Desktop.
 
 **Note:** SendGrid settings in `.env` are optional (for email reports).
 
@@ -35,9 +43,11 @@ Example of what TO do:
 
 This is an automated product feedback analyzer that:
 - Fetches issues from Jira Product Discovery (project: BPD)
+- Pulls CRM data from Salesforce (opportunities, close reasons, objections)
+- Analyzes sales call transcripts from Gong
 - Uses Claude AI to analyze trends and priorities
 - Sends twice-weekly email reports via SendGrid
-- Uses MCP server for interactive Jira queries in Claude Code
+- Uses MCP servers for interactive queries in Claude Code/Desktop
 
 ## Multi-Client Insight Formatting
 
@@ -89,8 +99,42 @@ mcp__jira__jira_get(
 )
 ```
 
+## Salesforce MCP Server Usage
+
+**Use the `salesforce` MCP server for CRM queries** (if configured).
+
+The Salesforce MCP provides SOQL query capabilities. Example queries:
+
+```
+-- Recent closed-won opportunities
+SELECT Id, Name, Amount, CloseDate, StageName FROM Opportunity
+WHERE StageName = 'Closed Won' ORDER BY CloseDate DESC LIMIT 10
+
+-- Close-lost reasons
+SELECT Id, Name, Loss_Reason__c, CloseDate FROM Opportunity
+WHERE StageName = 'Closed Lost' ORDER BY CloseDate DESC
+
+-- Opportunities by product
+SELECT Id, Name, Amount, Product__c FROM Opportunity
+WHERE Product__c = 'Product X'
+```
+
+## Gong MCP Server Usage
+
+**Use the `gong` MCP server for call transcript analysis** (if configured).
+
+Available tools:
+- `list_calls` - List calls with optional date range filtering
+- `retrieve_transcripts` - Get detailed transcripts for specific call IDs
+
+Example workflow:
+1. List recent calls: `list_calls(fromDateTime: "2025-01-01")`
+2. Get transcripts: `retrieve_transcripts(callIds: ["call-id-1", "call-id-2"])`
+
 ## Important Notes
 
 - Jira Product Discovery "Insights" are NOT accessible via API - only through the web UI
 - MCP server can access: descriptions, comments, custom fields (Product Area, Page/Feature/Theme)
+- Salesforce field names (like `Loss_Reason__c`) vary by org - query the schema if unsure
+- Gong transcripts include speaker IDs, topics, and timestamped sentences
 - The automated email reports SHOULD include recommendations - this instruction only applies to conversational responses
