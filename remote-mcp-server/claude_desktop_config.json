@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "customer-insights": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://customer-insights-mcp.lincoln-samuelson.workers.dev/mcp"]
+    }
+  }
+}
