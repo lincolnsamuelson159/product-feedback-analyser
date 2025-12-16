@@ -296,6 +296,98 @@ export class CustomerInsightsMCP extends McpAgent<Env, unknown, Props> {
     );
 
     // ==========================================
+    // G2 REVIEWS TOOLS
+    // ==========================================
+
+    this.server.tool(
+      "g2_get_reviews",
+      "Fetch recent G2 reviews for Board Intelligence. Returns review titles, ratings, and excerpts from the public reviews page.",
+      {
+        maxReviews: z.number().optional().default(10).describe("Maximum number of reviews to return"),
+      },
+      async ({ maxReviews }) => {
+        const result = await this.fetchG2Reviews(maxReviews);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+    );
+
+    this.server.tool(
+      "g2_search_reviews",
+      "Search G2 reviews for specific keywords. Useful for finding feedback about particular features.",
+      {
+        keywords: z.array(z.string()).describe("Keywords to search for in reviews"),
+        maxReviews: z.number().optional().default(20).describe("Maximum reviews to search through"),
+      },
+      async ({ keywords, maxReviews }) => {
+        const reviews = await this.fetchG2Reviews(maxReviews);
+        const lowerKeywords = keywords.map(k => k.toLowerCase());
+
+        const matching = reviews.reviews.filter((review: { title: string; pros?: string; cons?: string; overall?: string }) => {
+          const text = `${review.title} ${review.pros || ''} ${review.cons || ''} ${review.overall || ''}`.toLowerCase();
+          return lowerKeywords.some(kw => text.includes(kw));
+        });
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              query: keywords,
+              matchingReviews: matching.length,
+              reviews: matching,
+            }, null, 2)
+          }]
+        };
+      }
+    );
+
+    // ==========================================
+    // TRUSTPILOT REVIEWS TOOLS
+    // ==========================================
+
+    this.server.tool(
+      "trustpilot_get_reviews",
+      "Fetch recent Trustpilot reviews. Returns review titles, ratings, and content from the public reviews page.",
+      {
+        businessDomain: z.string().optional().default("boardintelligence.co.uk").describe("Business domain on Trustpilot"),
+        maxReviews: z.number().optional().default(10).describe("Maximum number of reviews to return"),
+      },
+      async ({ businessDomain, maxReviews }) => {
+        const result = await this.fetchTrustpilotReviews(businessDomain, maxReviews);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+    );
+
+    this.server.tool(
+      "trustpilot_search_reviews",
+      "Search Trustpilot reviews for specific keywords.",
+      {
+        keywords: z.array(z.string()).describe("Keywords to search for in reviews"),
+        businessDomain: z.string().optional().default("boardintelligence.co.uk").describe("Business domain on Trustpilot"),
+        maxReviews: z.number().optional().default(20).describe("Maximum reviews to search through"),
+      },
+      async ({ keywords, businessDomain, maxReviews }) => {
+        const reviews = await this.fetchTrustpilotReviews(businessDomain, maxReviews);
+        const lowerKeywords = keywords.map(k => k.toLowerCase());
+
+        const matching = reviews.reviews.filter((review: { title: string; content?: string }) => {
+          const text = `${review.title} ${review.content || ''}`.toLowerCase();
+          return lowerKeywords.some(kw => text.includes(kw));
+        });
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              query: keywords,
+              matchingReviews: matching.length,
+              reviews: matching,
+            }, null, 2)
+          }]
+        };
+      }
+    );
+
+    // ==========================================
     // MICROSOFT 365 TOOLS
     // ==========================================
 
@@ -468,6 +560,16 @@ export class CustomerInsightsMCP extends McpAgent<Env, unknown, Props> {
           microsoft365: {
             available: !!(this.env.MS365_CLIENT_ID && this.env.MS365_REFRESH_TOKEN),
             description: "Outlook email/calendar, SharePoint documents, Teams messages",
+          },
+          g2: {
+            available: true,
+            url: "https://www.g2.com/products/board-intelligence/reviews",
+            description: "Public G2 reviews - product feedback from verified users",
+          },
+          trustpilot: {
+            available: true,
+            url: "https://www.trustpilot.com/review/boardintelligence.co.uk",
+            description: "Public Trustpilot reviews - customer feedback and ratings",
           },
         };
         return { content: [{ type: "text", text: JSON.stringify(sources, null, 2) }] };
@@ -648,6 +750,180 @@ export class CustomerInsightsMCP extends McpAgent<Env, unknown, Props> {
     }
 
     return response.json();
+  }
+
+  // ==========================================
+  // G2 & TRUSTPILOT HELPERS
+  // ==========================================
+
+  private async fetchG2Reviews(maxReviews: number): Promise<{ source: string; url: string; reviews: Array<{ title: string; rating: number; reviewer: string; date: string; pros?: string; cons?: string; overall?: string }> }> {
+    const url = "https://www.g2.com/products/board-intelligence/reviews";
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`G2 fetch error: ${response.status}`);
+      }
+
+      const html = await response.text();
+      const reviews = this.parseG2Html(html, maxReviews);
+
+      return {
+        source: "G2",
+        url,
+        reviews,
+      };
+    } catch (error) {
+      return {
+        source: "G2",
+        url,
+        reviews: [],
+      };
+    }
+  }
+
+  private parseG2Html(html: string, maxReviews: number): Array<{ title: string; rating: number; reviewer: string; date: string; pros?: string; cons?: string; overall?: string }> {
+    const reviews: Array<{ title: string; rating: number; reviewer: string; date: string; pros?: string; cons?: string; overall?: string }> = [];
+
+    // G2 embeds review data in JSON-LD script tags
+    const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
+
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1]);
+
+        // Look for Review type in JSON-LD
+        if (data["@type"] === "Product" && data.review) {
+          const reviewArray = Array.isArray(data.review) ? data.review : [data.review];
+
+          for (const review of reviewArray) {
+            if (reviews.length >= maxReviews) break;
+
+            reviews.push({
+              title: review.name || "Untitled Review",
+              rating: review.reviewRating?.ratingValue || 0,
+              reviewer: review.author?.name || "Anonymous",
+              date: review.datePublished || "",
+              overall: review.reviewBody || "",
+            });
+          }
+        }
+      } catch {
+        // Skip invalid JSON
+      }
+    }
+
+    // Fallback: try to extract from HTML if no JSON-LD found
+    if (reviews.length === 0) {
+      // Look for review cards in the HTML
+      const reviewPattern = /data-review-id="([^"]+)"[\s\S]*?itemprop="name"[^>]*>([^<]+)[\s\S]*?stars-(\d)/g;
+      let match;
+      while ((match = reviewPattern.exec(html)) !== null && reviews.length < maxReviews) {
+        reviews.push({
+          title: match[2]?.trim() || "Review",
+          rating: parseInt(match[3]) || 0,
+          reviewer: "G2 User",
+          date: "",
+        });
+      }
+    }
+
+    return reviews;
+  }
+
+  private async fetchTrustpilotReviews(businessDomain: string, maxReviews: number): Promise<{ source: string; url: string; reviews: Array<{ title: string; rating: number; reviewer: string; date: string; content?: string }> }> {
+    const url = `https://www.trustpilot.com/review/${businessDomain}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Trustpilot fetch error: ${response.status}`);
+      }
+
+      const html = await response.text();
+      const reviews = this.parseTrustpilotHtml(html, maxReviews);
+
+      return {
+        source: "Trustpilot",
+        url,
+        reviews,
+      };
+    } catch (error) {
+      return {
+        source: "Trustpilot",
+        url,
+        reviews: [],
+      };
+    }
+  }
+
+  private parseTrustpilotHtml(html: string, maxReviews: number): Array<{ title: string; rating: number; reviewer: string; date: string; content?: string }> {
+    const reviews: Array<{ title: string; rating: number; reviewer: string; date: string; content?: string }> = [];
+
+    // Trustpilot includes review data in JSON-LD
+    const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
+
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1]);
+
+        // Look for LocalBusiness or Organization with reviews
+        if (data["@graph"]) {
+          for (const item of data["@graph"]) {
+            if (item.review) {
+              const reviewArray = Array.isArray(item.review) ? item.review : [item.review];
+
+              for (const review of reviewArray) {
+                if (reviews.length >= maxReviews) break;
+
+                reviews.push({
+                  title: review.headline || review.name || "Untitled Review",
+                  rating: review.reviewRating?.ratingValue || 0,
+                  reviewer: review.author?.name || "Anonymous",
+                  date: review.datePublished || "",
+                  content: review.reviewBody || "",
+                });
+              }
+            }
+          }
+        }
+
+        // Direct review array
+        if (data["@type"] === "Organization" && data.review) {
+          const reviewArray = Array.isArray(data.review) ? data.review : [data.review];
+
+          for (const review of reviewArray) {
+            if (reviews.length >= maxReviews) break;
+
+            reviews.push({
+              title: review.headline || review.name || "Untitled Review",
+              rating: review.reviewRating?.ratingValue || 0,
+              reviewer: review.author?.name || "Anonymous",
+              date: review.datePublished || "",
+              content: review.reviewBody || "",
+            });
+          }
+        }
+      } catch {
+        // Skip invalid JSON
+      }
+    }
+
+    return reviews;
   }
 }
 
