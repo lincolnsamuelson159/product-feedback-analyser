@@ -1,10 +1,11 @@
 name: Product Feedback Analysis
 
 on:
-  schedule:
-    # Runs every Monday and Thursday at 9:00 AM UTC
-    # Adjust the cron schedule to your preferred days and times
-    - cron: '0 9 * * 1,4'
+  # Schedule disabled - uncomment to re-enable
+  # schedule:
+  #   # Runs every Monday and Thursday at 9:00 AM UTC
+  #   # Adjust the cron schedule to your preferred days and times
+  #   - cron: '0 9 * * 1,4'
 
   # Allow manual triggering for testing
   workflow_dispatch:
